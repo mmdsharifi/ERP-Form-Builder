@@ -458,11 +458,14 @@ export default function App() {
           <span className="bg-teal-100 text-teal-800 px-2.5 py-1 rounded-full text-xs mr-2">ثبت اولیه</span>
         </div>
         <div className="flex items-center space-x-reverse space-x-4">
-          <button className="flex items-center space-x-reverse space-x-1 bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-md text-sm hover:bg-indigo-200 transition">
-            <Save className="w-4 h-4" /> <span>ذخیره ⌄</span>
+          <button className="flex items-center gap-1.5 bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-md text-sm hover:bg-indigo-200 transition">
+            <Save className="w-4 h-4" /> 
+            <span>ذخیره</span>
+            <ChevronDown className="w-4 h-4" />
           </button>
-          <button className="flex items-center space-x-reverse space-x-1 bg-white border border-gray-200 px-3 py-1.5 rounded-md text-sm hover:bg-gray-50 transition">
-            <span>تغییر وضعیت ⌄</span>
+          <button className="flex items-center gap-1.5 bg-white border border-gray-200 px-3 py-1.5 rounded-md text-sm hover:bg-gray-50 transition">
+            <span>تغییر وضعیت</span>
+            <ChevronDown className="w-4 h-4 opacity-50" />
           </button>
           <button className="text-gray-500 hover:text-gray-700 p-1 bg-white border border-gray-200 rounded-md">
             <MoreHorizontal className="w-5 h-5" />
@@ -512,11 +515,14 @@ export default function App() {
                       <div className="flex flex-col items-center justify-center py-12 px-4 border-2 border-dashed border-gray-200 rounded-xl bg-gray-50">
                         <Database className="w-6 h-6 text-indigo-500 mb-4" />
                         <h4 className="font-bold text-gray-700 mb-2">ابتدا موجودیت را متصل کنید</h4>
-                        <select value="" onChange={(e) => handleBindEntity('main', e.target.value)} onClick={(e) => e.stopPropagation()} className="bg-white border border-gray-300 rounded-lg text-sm px-4 py-2 w-64 shadow-sm focus:ring-2 focus:ring-indigo-500 font-medium text-gray-700 cursor-pointer">
-                          <option value="" disabled>-- انتخاب موجودیت --</option>
-                          <option value="sales_process">روند فروش (Sales Process)</option>
-                          <option value="sales_stages">مراحل فروش (Sales Stages)</option>
-                        </select>
+                        <div className="relative inline-block w-64">
+                          <select value="" onChange={(e) => handleBindEntity('main', e.target.value)} onClick={(e) => e.stopPropagation()} className="w-full appearance-none bg-white border border-gray-300 rounded-lg text-sm pr-4 pl-10 py-2 shadow-sm focus:ring-2 focus:ring-indigo-500 font-medium text-gray-700 cursor-pointer">
+                            <option value="" disabled>-- انتخاب موجودیت --</option>
+                            <option value="sales_process">روند فروش (Sales Process)</option>
+                            <option value="sales_stages">مراحل فروش (Sales Stages)</option>
+                          </select>
+                          <ChevronDown className="w-4 h-4 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        </div>
                       </div>
                     ) : (
                       <FormPanel 
@@ -727,30 +733,33 @@ export default function App() {
                                   <div className="flex flex-col items-center justify-center py-12 px-4 border-2 border-dashed border-gray-200 rounded-xl bg-gray-50 text-center">
                                     <Database className="w-6 h-6 text-indigo-500 mb-4" />
                                     <h4 className="font-bold text-gray-700 mb-2">اتصال پنل به موجودیت</h4>
-                                    <select 
-                                      value="" 
-                                      onChange={(e) => {
-                                        const val = e.target.value;
-                                        updateTab(t => {
-                                          const fields = (entityDictionary as any)[val]?.fields || [];
-                                          return {
-                                            ...t,
-                                            boundEntity: val,
-                                            gridColumns: fields,
-                                            groups: [{ id: `g_base_${t.id}`, name: 'اطلاعات پایه', columns: 2, fields: fields }]
-                                          };
-                                        });
-                                        if (selectedElement?._tabId === activeTab.id) setSelectedElement(null);
-                                      }} 
-                                      onClick={(e) => e.stopPropagation()} 
-                                      className="bg-white border border-gray-300 rounded-lg text-sm px-4 py-2 w-64 shadow-sm focus:ring-2 focus:ring-indigo-500 font-medium text-gray-700 cursor-pointer"
-                                    >
-                                      <option value="" disabled>-- انتخاب موجودیت --</option>
-                                      <option value="sales_process">روند فروش (Sales Process)</option>
-                                      <option value="sales_stages">مراحل فروش (Sales Stages)</option>
-                                      <option value="stage_info">اطلاعات مرحله (Stage Info)</option>
-                                      <option value="key_info">اطلاعات کلیدی (Key Info)</option>
-                                    </select>
+                                    <div className="relative inline-block w-64">
+                                      <select 
+                                        value="" 
+                                        onChange={(e) => {
+                                          const val = e.target.value;
+                                          updateTab(t => {
+                                            const fields = (entityDictionary as any)[val]?.fields || [];
+                                            return {
+                                              ...t,
+                                              boundEntity: val,
+                                              gridColumns: fields,
+                                              groups: [{ id: `g_base_${t.id}`, name: 'اطلاعات پایه', columns: 2, fields: fields }]
+                                            };
+                                          });
+                                          if (selectedElement?._tabId === activeTab.id) setSelectedElement(null);
+                                        }} 
+                                        onClick={(e) => e.stopPropagation()} 
+                                        className="w-full appearance-none bg-white border border-gray-300 rounded-lg text-sm pr-4 pl-10 py-2 shadow-sm focus:ring-2 focus:ring-indigo-500 font-medium text-gray-700 cursor-pointer"
+                                      >
+                                        <option value="" disabled>-- انتخاب موجودیت --</option>
+                                        <option value="sales_process">روند فروش (Sales Process)</option>
+                                        <option value="sales_stages">مراحل فروش (Sales Stages)</option>
+                                        <option value="stage_info">اطلاعات مرحله (Stage Info)</option>
+                                        <option value="key_info">اطلاعات کلیدی (Key Info)</option>
+                                      </select>
+                                      <ChevronDown className="w-4 h-4 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                    </div>
                                   </div>
                                  ) : (
                                     activeTab.viewType === 'grid' ? (

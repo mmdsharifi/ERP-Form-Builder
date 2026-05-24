@@ -132,8 +132,13 @@ export const FormPanel: React.FC<FormPanelProps> = ({
                      </div>
                   ) : (field as any).type === 'comp-text' && (field as any).multiline ? (
                      <textarea disabled placeholder={(field as any).placeholder || ''} value={(field as any).defaultValue || ''} className={`w-full border border-gray-200 rounded-md h-20 px-3 py-2 text-sm text-gray-500 cursor-not-allowed text-right ${(field as any).editable === false ? 'bg-gray-100' : 'bg-white'}`} readOnly />
+                  ) : (field as any).type === 'comp-select' ? (
+                     <div className="relative">
+                       <input type="text" disabled placeholder="انتخاب کنید..." className={`w-full border border-gray-200 rounded-md h-10 pr-3 pl-8 text-sm text-gray-500 cursor-not-allowed text-right ${(field as any).editable === false ? 'bg-gray-100' : 'bg-white'}`} readOnly />
+                       <ChevronDown className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                     </div>
                   ) : (
-                     <input type="text" disabled placeholder={(field as any).type === 'comp-select' ? 'انتخاب کنید...' : (field as any).placeholder || ''} value={(field as any).defaultValue || ''} className={`w-full border border-gray-200 rounded-md h-10 px-3 text-sm text-gray-500 cursor-not-allowed text-right ${(field as any).editable === false ? 'bg-gray-100' : 'bg-white'}`} readOnly />
+                     <input type="text" disabled placeholder={(field as any).placeholder || ''} value={(field as any).defaultValue || ''} className={`w-full border border-gray-200 rounded-md h-10 px-3 text-sm text-gray-500 cursor-not-allowed text-right ${(field as any).editable === false ? 'bg-gray-100' : 'bg-white'}`} readOnly />
                   )}
                 </div>
               ))

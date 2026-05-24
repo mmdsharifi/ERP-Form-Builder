@@ -33,7 +33,7 @@ interface PropertyFieldProps {
   disabled?: boolean;
 }
 
-import { Info } from 'lucide-react';
+import { Info, ChevronDown } from 'lucide-react';
 
 export const PropertyField: React.FC<PropertyFieldProps> = ({ label, type, value, onChange, onBlur, options, optionsLabels, info, disabled }) => (
   <div className={`space-y-1.5 ${disabled ? 'opacity-60 pointer-events-none' : ''}`}>
@@ -59,16 +59,19 @@ export const PropertyField: React.FC<PropertyFieldProps> = ({ label, type, value
         className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-right disabled:bg-gray-100 disabled:text-gray-500"
       />
     ) : (
-      <select 
-        value={value || ''} 
-        onChange={(e) => onChange(e.target.value)}
-        disabled={disabled}
-        className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium text-gray-700 text-right disabled:bg-gray-100 disabled:text-gray-500"
-      >
-        {options?.map((opt, i) => (
-          <option key={opt} value={opt}>{optionsLabels ? optionsLabels[i] : opt}</option>
-        ))}
-      </select>
+      <div className="relative">
+        <select 
+          value={value || ''} 
+          onChange={(e) => onChange(e.target.value)}
+          disabled={disabled}
+          className="w-full appearance-none bg-gray-50 border border-gray-200 rounded-lg pr-3 pl-8 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium text-gray-700 text-right disabled:bg-gray-100 disabled:text-gray-500"
+        >
+          {options?.map((opt, i) => (
+            <option key={opt} value={opt}>{optionsLabels ? optionsLabels[i] : opt}</option>
+          ))}
+        </select>
+        <ChevronDown className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+      </div>
     )}
   </div>
 );
