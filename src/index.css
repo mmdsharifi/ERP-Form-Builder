@@ -1,0 +1,17 @@
+@import "tailwindcss";
+
+@layer base {
+  @font-face {
+    font-family: 'Vazirmatn';
+    src: url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800&display=swap');
+  }
+
+  body {
+    @apply font-vazir text-gray-800 antialiased;
+  }
+}
+
+@theme {
+  --font-vazir: "Vazirmatn", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Vazirmatn", ui-sans-serif, system-ui, sans-serif;
+}

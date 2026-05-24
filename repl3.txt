@@ -1,0 +1,9 @@
+                ) : selectedElement.type === 'container-main' ? (
+                  <>
+                    <PropertyField label="عنوان پنل" type="text" value={selectedElement.label} onChange={(val) => {
+                      setMainPanelName(val);
+                      setSelectedElement({ ...selectedElement, label: val });
+                    }} />
+                    <PropertyField label="اتصال موجودیت" type="select" value={boundMainEntity} options={['', 'sales_process', 'sales_stages', 'stage_info', 'key_info']} optionsLabels={['-- قطع اتصال --', 'روند فروش', 'مراحل فروش', 'اطلاعات مرحله', 'اطلاعات کلیدی']} onChange={(val) => handleBindEntity('main', val)} />
+                  </>
+                ) : selectedElement.type === 'container-l2-panel' || selectedElement.type === 'container-l3-panel' ? (

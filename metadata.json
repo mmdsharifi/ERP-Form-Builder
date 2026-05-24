@@ -1,0 +1,6 @@
+{
+  "name": "Enterprise Form & Grid Builder",
+  "description": "A high-fidelity B2B SaaS builder for master-detail forms and grids with infinite drill-down navigation.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
