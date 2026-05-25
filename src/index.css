@@ -1,17 +1,16 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Vazirmatn:wght@300;400;500;600;700;800&display=swap');
+
 @import "tailwindcss";
 
-@layer base {
-  @font-face {
-    font-family: 'Vazirmatn';
-    src: url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800&display=swap');
-  }
+@custom-variant dark (&:where(.dark, .dark *));
 
+@layer base {
   body {
-    @apply font-vazir text-gray-800 antialiased;
+    @apply transition-colors duration-200 antialiased;
   }
 }
 
 @theme {
   --font-vazir: "Vazirmatn", ui-sans-serif, system-ui, sans-serif;
-  --font-sans: "Vazirmatn", ui-sans-serif, system-ui, sans-serif;
+  --font-dmsans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
 }
