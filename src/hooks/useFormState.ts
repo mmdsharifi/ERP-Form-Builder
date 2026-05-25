@@ -35,12 +35,12 @@ export const initialGridData = [
 
 export function useFormState() {
   // --- STATE MANAGEMENT ---
-  const [entities, setEntities] = useState<Record<string, { name: string; fields: any[] }>>(entityDictionary);
+  const [entities, setEntities] = useState<Record<string, { name: string; fields: any[]; status?: string }>>(entityDictionary);
 
-  const addEntity = (systemName: string, name: string, fields: any[]) => {
+  const addEntity = (systemName: string, name: string, fields: any[], status?: string) => {
     setEntities(prev => ({
       ...prev,
-      [systemName]: { name, fields }
+      [systemName]: { name, fields, status }
     }));
   };
 
@@ -50,6 +50,7 @@ export function useFormState() {
 
   const [boundMainEntity, setBoundMainEntity] = useState('');
   const [mainPanelName, setMainPanelName] = useState('اطلاعات اصلی');
+  const [mainPanelColumns, setMainPanelColumns] = useState(5);
 
   // Stack for Drill-down navigation. Root is level 1.
   const [viewStack, setViewStack] = useState<any[]>([{ id: 'root', type: 'main', title: 'اطلاعات اصلی' }]);
@@ -72,23 +73,7 @@ export function useFormState() {
     setLevel2Tabs(tabs => tabs.map(t => t.id === activeL2TabId ? updater(t) : t));
   };
 
-  const [level3Tabs, setLevel3Tabs] = useState<any[]>([
-    {
-      id: 'tab_1',
-      title: 'اطلاعات',
-      boundEntity: '',
-      viewType: 'form',
-      gridColumns: [],
-      groups: [{ id: 'l3g_base_1', name: 'اطلاعات پایه', columns: 2, fields: [] }],
-      gridSettings: { showAdd: true, showSearch: true, showCheckbox: true }
-    }
-  ]);
-  const [activeTabId, setActiveTabId] = useState('tab_1');
-  const [editingTabId, setEditingTabId] = useState<string | null>(null);
 
-  const updateActiveTab = (updater: (tab: any) => any) => {
-    setLevel3Tabs(tabs => tabs.map(t => t.id === activeTabId ? updater(t) : t));
-  };
 
   const currentView = viewStack[viewStack.length - 1];
   const isRoot = viewStack.length === 1;
@@ -263,25 +248,8 @@ export function useFormState() {
   };
 
   // --- HANDLERS ---
-  const handleDrillDown = (row: any) => {
-    const activeTab = level3Tabs.find(t => t.id === activeTabId) || level3Tabs[0];
-    setViewStack([...viewStack, { id: row.id, type: 'detail', title: row.name, probability: row.probability }]);
-    setSelectedElement({ ...activeTab, id: `l3-panel-${activeTab.id}`, type: 'container-l3-panel', label: activeTab.title, _tabId: activeTab.id, _context: 'l3' });
-  };
-
-  const handleBack = () => {
-    if (viewStack.length > 1) {
-      const newStack = viewStack.slice(0, -1);
-      setViewStack(newStack);
-      if (newStack.length === 1) {
-        const activeTab = level2Tabs.find(t => t.id === activeL2TabId) || level2Tabs[0];
-        setSelectedElement({ ...activeTab, id: `l2-panel-${activeTab.id}`, type: 'container-l2-panel', label: activeTab.title, _tabId: activeTab.id, _context: 'l2' });
-      } else {
-        const activeTab = level3Tabs.find(t => t.id === activeTabId) || level3Tabs[0];
-        setSelectedElement({ ...activeTab, id: `l3-panel-${activeTab.id}`, type: 'container-l3-panel', label: activeTab.title, _tabId: activeTab.id, _context: 'l3' });
-      }
-    }
-  };
+  const handleDrillDown = (row: any) => {};
+  const handleBack = () => {};
 
   const handleBindEntity = (zone: string, entityKey: string) => {
     if (zone === 'main') {
@@ -327,7 +295,7 @@ export function useFormState() {
     const componentType = e.dataTransfer.getData('componentType');
     const draggedFieldData = e.dataTransfer.getData('draggedField');
 
-    if (draggedFieldData && (targetZone === 'main' || targetZone === 'l2-form' || targetZone === 'l3-form') && groupId) {
+    if (draggedFieldData && (targetZone === 'main' || targetZone === 'l2-form') && groupId) {
       const { fieldId, sourceGroupId, sourceZone } = JSON.parse(draggedFieldData);
       if (sourceZone !== targetZone || fieldId === targetFieldId) return;
 
@@ -359,8 +327,8 @@ export function useFormState() {
           });
         });
       } else {
-         const setTabs = targetZone === 'l2-form' ? setLevel2Tabs : setLevel3Tabs;
-         const activeId = targetZone === 'l2-form' ? activeL2TabId : activeTabId;
+         const setTabs = setLevel2Tabs;
+         const activeId = activeL2TabId;
          
          setTabs(prevTabs => prevTabs.map(t => {
             if (t.id === activeId) {
@@ -413,8 +381,6 @@ export function useFormState() {
 
       if (targetZone === 'l2-grid-columns') {
         setLevel2Tabs(tabs => tabs.map(t => t.id === activeL2TabId ? { ...t, gridColumns: [...t.gridColumns, newItem] } : t));
-      } else if (targetZone === 'l3-grid-columns') {
-        setLevel3Tabs(tabs => tabs.map(t => t.id === activeTabId ? { ...t, gridColumns: [...t.gridColumns, newItem] } : t));
       }
       return;
     }
@@ -427,12 +393,6 @@ export function useFormState() {
       usedFields = mainGroups.flatMap(g => g.fields).map(f => f.boundSystemField).filter(Boolean);
     } else if (targetZone.startsWith('l2-')) {
       const tab = level2Tabs.find(t => t.id === activeL2TabId);
-      if (tab) {
-        currentEntityKey = tab.boundEntity || '';
-        usedFields = tab.groups.flatMap((g: any) => g.fields).map((f:any) => f.boundSystemField).filter(Boolean);
-      }
-    } else if (targetZone.startsWith('l3-')) {
-      const tab = level3Tabs.find(t => t.id === activeTabId);
       if (tab) {
         currentEntityKey = tab.boundEntity || '';
         usedFields = tab.groups.flatMap((g: any) => g.fields).map((f:any) => f.boundSystemField).filter(Boolean);
@@ -463,7 +423,7 @@ export function useFormState() {
       required: false
     };
 
-    if ((targetZone === 'main' || targetZone === 'l2-form' || targetZone === 'l3-form') && groupId) {
+    if ((targetZone === 'main' || targetZone === 'l2-form') && groupId) {
       if (targetZone === 'main') {
         setMainGroups(groups => groups.map(g => {
           if (g.id === groupId) {
@@ -480,8 +440,8 @@ export function useFormState() {
           return g;
         }));
       } else {
-        const setTabs = targetZone === 'l2-form' ? setLevel2Tabs : setLevel3Tabs;
-        const activeId = targetZone === 'l2-form' ? activeL2TabId : activeTabId;
+        const setTabs = setLevel2Tabs;
+        const activeId = activeL2TabId;
          
         setTabs(tabs => tabs.map((t:any) => {
           if (t.id === activeId) {
@@ -508,8 +468,6 @@ export function useFormState() {
       }
     } else if (targetZone === 'l2-grid-columns') {
        setLevel2Tabs(tabs => tabs.map(t => t.id === activeL2TabId ? { ...t, gridColumns: [...t.gridColumns, newItem] } : t));
-    } else if (targetZone === 'l3-grid-columns') {
-       setLevel3Tabs(tabs => tabs.map(t => t.id === activeTabId ? { ...t, gridColumns: [...t.gridColumns, newItem] } : t));
     }
   };
 
@@ -519,18 +477,15 @@ export function useFormState() {
     const newGroup = { id: `g_${Date.now()}`, name: 'گروه جدید', columns: zone === 'main' ? 5 : 2, fields: [] };
     if (zone === 'main') setMainGroups([...mainGroups, newGroup]);
     else if (zone === 'l2-form') setLevel2Tabs(tabs => tabs.map(t => t.id === activeL2TabId ? { ...t, groups: [...t.groups, newGroup] } : t));
-    else if (zone === 'l3-form') setLevel3Tabs(tabs => tabs.map(t => t.id === activeTabId ? { ...t, groups: [...t.groups, newGroup] } : t));
   };
 
   const handleDeleteGroup = (e: React.MouseEvent, groupId: string, zone: string) => {
     e.stopPropagation();
-    if (groupId === 'g_base' || groupId.startsWith('l2g_base') || groupId.startsWith('l3g_base') || groupId.startsWith('g_base_')) {
-      alert('گروه پایه قابل حذف نیست.');
+    if (groupId === 'g_base' || groupId.startsWith('l2g_base')) {
       return;
     }
     if (zone === 'main') setMainGroups(mainGroups.filter(g => g.id !== groupId));
     else if (zone === 'l2-form') setLevel2Tabs(tabs => tabs.map(t => t.id === activeL2TabId ? { ...t, groups: t.groups.filter((g:any) => g.id !== groupId) } : t));
-    else if (zone === 'l3-form') setLevel3Tabs(tabs => tabs.map(t => t.id === activeTabId ? { ...t, groups: t.groups.filter((g:any) => g.id !== groupId) } : t));
     
     if (selectedElement?.id === groupId) setSelectedElement(null);
   };
@@ -543,12 +498,8 @@ export function useFormState() {
       ));
     } else if (zone === 'l2-form' && groupId) {
       setLevel2Tabs(tabs => tabs.map(t => t.id === activeL2TabId ? { ...t, groups: t.groups.map((g:any) => g.id === groupId ? { ...g, fields: g.fields.filter((f:any) => f.id !== id) } : g) } : t));
-    } else if (zone === 'l3-form' && groupId) {
-      setLevel3Tabs(tabs => tabs.map(t => t.id === activeTabId ? { ...t, groups: t.groups.map((g:any) => g.id === groupId ? { ...g, fields: g.fields.filter((f:any) => f.id !== id) } : g) } : t));
     } else if (zone === 'l2-grid-columns') {
       setLevel2Tabs(tabs => tabs.map(t => t.id === activeL2TabId ? { ...t, gridColumns: t.gridColumns.filter((c:any) => c.id !== id) } : t));
-    } else if (zone === 'l3-grid-columns') {
-      setLevel3Tabs(tabs => tabs.map(t => t.id === activeTabId ? { ...t, gridColumns: t.gridColumns.filter((c:any) => c.id !== id) } : t));
     }
     if (selectedElement?.id === id) setSelectedElement(null);
   };
@@ -562,14 +513,17 @@ export function useFormState() {
         setMainPanelName(value);
         setViewStack(stack => stack.map((item, idx) => idx === 0 ? { ...item, title: value } : item));
       }
+      if (prop === 'columns') {
+        setMainPanelColumns(value);
+        setMainGroups(groups => groups.map(g => ({ ...g, columns: value })));
+      }
       setSelectedElement((prev: any) => ({...prev, [prop]: value}));
       return;
     }
 
     if (selectedElement.type === 'grid-footer-row') {
       const tabId = selectedElement._tabId;
-      const context = selectedElement._context;
-      const setTabs = context === 'l2' ? setLevel2Tabs : setLevel3Tabs;
+      const setTabs = setLevel2Tabs;
       setTabs(tabs => tabs.map(t => {
         if (t.id === tabId) {
           const nextFooterRows = (t.footerRows || []).map((row: any) => 
@@ -596,11 +550,7 @@ export function useFormState() {
       return;
     }
     
-    if (selectedElement.type === 'container-l3-panel') {
-      setLevel3Tabs(tabs => tabs.map(t => t.id === selectedElement._tabId ? { ...t, [prop]: value } : t));
-      setSelectedElement((prev: any) => ({...prev, [prop]: value}));
-      return;
-    }
+
 
     if (selectedElement.type === 'container-l2-group') {
       setLevel2Tabs(tabs => tabs.map(t => ({
@@ -611,30 +561,12 @@ export function useFormState() {
       return;
     }
 
-    if (selectedElement.type === 'container-l3-group') {
-      setLevel3Tabs(tabs => tabs.map(t => ({
-         ...t,
-         groups: t.groups.map((g: any) => g.id === id ? { ...g, [prop]: value } : g)
-      })));
-      setSelectedElement((prev: any) => ({...prev, [prop]: value}));
-      return;
-    }
+
 
     setMainGroups(groups => groups.map(g => ({
       ...g, fields: g.fields.map(f => f.id === id ? { ...f, [prop]: value } : f)
     })));
     setLevel2Tabs(tabs => tabs.map(t => ({
-      ...t,
-      gridColumns: t.gridColumns.map((c: any) => c.id === id ? { ...c, [prop]: value } : c),
-      groups: t.groups.map((g: any) => {
-         if (g.id === id) return { ...g, [prop]: value };
-         return {
-            ...g,
-            fields: g.fields.map((f: any) => f.id === id ? { ...f, [prop]: value } : f)
-         };
-      })
-    })));
-    setLevel3Tabs(tabs => tabs.map(t => ({
       ...t,
       gridColumns: t.gridColumns.map((c: any) => c.id === id ? { ...c, [prop]: value } : c),
       groups: t.groups.map((g: any) => {
@@ -664,13 +596,6 @@ export function useFormState() {
     activeL2TabId,
     setActiveL2TabId,
     updateActiveL2Tab,
-    level3Tabs,
-    setLevel3Tabs,
-    activeTabId,
-    setActiveTabId,
-    editingTabId,
-    setEditingTabId,
-    updateActiveTab,
     currentView,
     isRoot,
     language,
@@ -690,7 +615,9 @@ export function useFormState() {
     setEntities,
     addEntity,
     draggedType,
-    setDraggedType
+    setDraggedType,
+    mainPanelColumns,
+    setMainPanelColumns
   };
 }
 

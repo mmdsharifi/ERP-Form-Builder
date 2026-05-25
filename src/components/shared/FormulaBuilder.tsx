@@ -66,7 +66,7 @@ export const FormulaBuilder: React.FC<FormulaBuilderProps> = ({ formula, numeric
               <select
                 value={ops[i - 1] ?? '+'}
                 onChange={(e) => updateOp(i - 1, e.target.value)}
-                className="w-12 border border-gray-200 dark:border-slate-700 rounded px-1 py-0.5 text-xs text-center bg-white dark:bg-slate-800 font-bold text-gray-600 dark:text-slate-350 focus:outline-none"
+                className="w-12 border border-gray-200 dark:border-slate-700 rounded px-1 py-0.5 text-xs text-center bg-white dark:bg-slate-800 font-bold text-gray-600 dark:text-slate-300 focus:outline-none"
               >
                 {OPS.map(op => <option key={op} value={op}>{op}</option>)}
               </select>

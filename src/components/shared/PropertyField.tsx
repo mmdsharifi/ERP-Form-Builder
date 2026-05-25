@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Info } from 'lucide-react';
 
 interface PropertyFieldProps {
   label: string;
@@ -32,13 +32,11 @@ export const PropertyField: React.FC<PropertyFieldProps> = ({
     <label className="flex items-center gap-1.5 text-[11px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider">
       {label}
       {info && (
-        <div className="relative group/tooltip flex items-center mt-[1px]">
-          <span className="text-[10px] font-bold text-gray-400 dark:text-slate-500 hover:text-gray-650 cursor-help transition-colors select-none font-mono px-0.5">
-            (?)
-          </span>
-          <div className="absolute top-full -translate-y-1 right-1/2 translate-x-1/2 mt-1 w-48 p-2 bg-gray-900 dark:bg-slate-950 text-white text-[10px] leading-relaxed rounded-md shadow-xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible group-hover/tooltip:-translate-y-0 transition-all z-50 text-start font-normal normal-case tracking-normal border border-white/10 dark:border-slate-800">
+        <div className="relative group/tooltip flex items-center">
+          <Info className="w-3 h-3 text-gray-400 dark:text-slate-500 hover:text-indigo-500 dark:hover:text-indigo-400 cursor-help transition-colors select-none" />
+          <div className="absolute bottom-full right-1/2 translate-x-1/2 mb-2 w-48 p-2 bg-gray-900 dark:bg-slate-950 text-white text-[10px] leading-relaxed rounded-md shadow-xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all z-[9999] text-start font-normal normal-case tracking-normal border border-white/10 dark:border-slate-800 pointer-events-none">
             {info}
-            <div className="absolute bottom-[99%] right-1/2 translate-x-1/2 border-[5px] border-transparent border-b-gray-900 dark:border-b-slate-950" />
+            <div className="absolute top-[99%] right-1/2 translate-x-1/2 border-[5px] border-transparent border-t-gray-900 dark:border-t-slate-950" />
           </div>
         </div>
       )}
