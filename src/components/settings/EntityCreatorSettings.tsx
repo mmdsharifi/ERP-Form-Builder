@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, X, AlertCircle } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { Plus, Trash2, X, AlertCircle, Save, Database, Check, ChevronDown } from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
 import { PropertyField } from '../shared/PropertyField';
 
 interface FieldDef {
@@ -14,8 +16,8 @@ interface FieldDef {
 interface EntityCreatorSettingsProps {
   selectedElement: any;
   setSelectedElement: (el: any) => void;
-  entities: Record<string, { name: string; fields: any[] }>;
-  addEntity: (systemName: string, name: string, fields: any[]) => void;
+  entities: Record<string, { name: string; fields: any[]; status?: string }>;
+  addEntity: (systemName: string, name: string, fields: any[], status?: string) => void;
   language: 'fa' | 'en';
   t: (key: string) => string;
 }
@@ -33,29 +35,39 @@ export const EntityCreatorSettings: React.FC<EntityCreatorSettingsProps> = ({
   const initialDisplayName = selectedElement.title || '';
   const initialFields = selectedElement.fields || [];
 
+  // Entity-level status loaded from entities object if editing, otherwise defaults to draft
+  const initialStatus = isEditing 
+    ? (entities[initialSystemName]?.status || 'published') 
+    : 'draft';
+
   const [displayName, setDisplayName] = useState(initialDisplayName);
   const [systemName, setSystemName] = useState(initialSystemName);
-  const [fields, setFields] = useState<FieldDef[]>(initialFields);
+  const [entityStatus, setEntityStatus] = useState<'draft' | 'published' | 'disabled'>(initialStatus as any);
+  const [fields, setFields] = useState<FieldDef[]>([]);
 
-  // Field creation state (inline popover)
-  const [addingField, setAddingField] = useState(false);
-  const [fieldLabel, setFieldLabel] = useState('');
-  const [fieldId, setFieldId] = useState('');
-  const [fieldType, setFieldType] = useState('comp-text');
-  const [relatedEntity, setRelatedEntity] = useState('');
+  // Popover state for creating/editing a field
+  const [editingField, setEditingField] = useState<(FieldDef & { isNew?: boolean }) | null>(null);
+  const [popoverPosition, setPopoverPosition] = useState<{ top: number; height: number; right: number } | null>(null);
 
   // Validation states
   const [systemNameError, setSystemNameError] = useState('');
-  const [fieldSystemNameError, setFieldSystemNameError] = useState('');
 
   useEffect(() => {
     setDisplayName(selectedElement.title || '');
     setSystemName(selectedElement.systemName || '');
-    setFields(selectedElement.fields || []);
-    setAddingField(false);
+    
+    const loadedFields = selectedElement.fields || [];
+    setFields(loadedFields);
     setSystemNameError('');
-    setFieldSystemNameError('');
-  }, [selectedElement]);
+    setEditingField(null);
+
+    // Sync status when selected element changes
+    const elementSystemName = selectedElement.systemName;
+    const currentStatus = elementSystemName && entities[elementSystemName]
+      ? (entities[elementSystemName].status || 'published')
+      : 'draft';
+    setEntityStatus(currentStatus as any);
+  }, [selectedElement, entities]);
 
   const handleSystemNameChange = (val: string) => {
     // English alphanumeric & underscores only
@@ -69,44 +81,30 @@ export const EntityCreatorSettings: React.FC<EntityCreatorSettingsProps> = ({
     }
   };
 
-  const handleFieldIdChange = (val: string) => {
-    const cleanVal = val.replace(/[^a-zA-Z0-9_]/g, '');
-    setFieldId(cleanVal);
-
-    if (fields.some(f => f.id === cleanVal)) {
-      setFieldSystemNameError(language === 'fa' ? 'شناسه فیلد تکراری است' : 'Field ID already exists');
-    } else {
-      setFieldSystemNameError('');
+  const handleAddNewDraftField = (e: React.MouseEvent) => {
+    // If the entity is currently published, adding a field automatically switches the status to draft
+    if (entityStatus === 'published') {
+      setEntityStatus('draft');
     }
-  };
-
-  const handleAddField = () => {
-    if (!fieldLabel.trim()) return;
-    if (!fieldId.trim()) return;
-    if (fields.some(f => f.id === fieldId)) return;
-    if (fieldType === 'comp-relation' && !relatedEntity) return;
-
-    const newField: FieldDef = {
-      id: fieldId,
-      name: fieldLabel,
-      label: fieldLabel,
-      type: fieldType,
-      required: false,
-      ...(fieldType === 'comp-relation' && { relatedEntity })
-    };
-
-    setFields([...fields, newField]);
-    setAddingField(false);
-    // Reset field form
-    setFieldLabel('');
-    setFieldId('');
-    setFieldType('comp-text');
-    setRelatedEntity('');
-    setFieldSystemNameError('');
+    const rect = e.currentTarget.getBoundingClientRect();
+    setPopoverPosition({
+      top: rect.top,
+      height: rect.height,
+      right: rect.right
+    });
+    setEditingField({
+      id: `field_${Date.now()}`,
+      label: '',
+      name: '',
+      type: 'comp-text',
+      status: 'draft',
+      isNew: true
+    } as any);
   };
 
   const handleRemoveField = (id: string) => {
     setFields(fields.filter(f => f.id !== id));
+    if (editingField?.id === id) setEditingField(null);
   };
 
   const handleSaveEntity = () => {
@@ -116,10 +114,11 @@ export const EntityCreatorSettings: React.FC<EntityCreatorSettingsProps> = ({
       return;
     }
 
-    addEntity(systemName, displayName, fields);
+    // Save entity with current entity status
+    addEntity(systemName, displayName, fields, entityStatus);
 
-    // Reset settings panel view
-    setSelectedElement(null);
+    // Go back to the calling tab panel
+    setSelectedElement(selectedElement._backElement || null);
   };
 
   const getFieldTypeLabel = (type: string): string => {
@@ -134,31 +133,75 @@ export const EntityCreatorSettings: React.FC<EntityCreatorSettingsProps> = ({
     return map[type] || type;
   };
 
-  const isFormValid = displayName.trim() && systemName.trim() && !systemNameError && fields.length > 0;
+  // Perform form validation
+  const hasFieldErrors = fields.some(f => {
+    if (!f.label.trim()) return true;
+    if (!f.id.trim() || f.id.startsWith('field_')) return true;
+    const isDuplicate = fields.some(other => other.id === f.id && other !== f);
+    if (isDuplicate) return true;
+    if (f.type === 'comp-relation' && !f.relatedEntity) return true;
+    return false;
+  });
+
+  const isFormValid = displayName.trim() && systemName.trim() && !systemNameError && fields.length > 0 && !hasFieldErrors;
+  const isPublished = entityStatus === 'published';
 
   return (
-    <div className="relative space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-slate-800">
-        <h3 className="font-bold text-gray-700 dark:text-slate-200 text-sm">
-          {isEditing 
-            ? (language === 'fa' ? 'ویرایش موجودیت' : 'Edit Entity') 
-            : (language === 'fa' ? 'تعریف موجودیت جدید' : 'Define New Entity')}
-        </h3>
-        <button
-          type="button"
-          onClick={() => setSelectedElement(null)}
-          className="text-xs font-semibold text-gray-500 hover:text-indigo-650 dark:hover:text-indigo-400 cursor-pointer"
-        >
-          {language === 'fa' ? 'انصراف' : 'Cancel'}
-        </button>
+    <div className="relative space-y-5 text-start">
+      {/* Header with status dropdown on the left & actions on the right */}
+      <div className="flex items-center justify-between pb-3 border-b border-gray-200 dark:border-slate-800/80">
+        {/* Status Dropdown in Header Left corner */}
+        <div className="w-[110px] relative">
+          <select
+            disabled={isPublished}
+            value={entityStatus}
+            onChange={(e) => setEntityStatus(e.target.value as any)}
+            className="w-full appearance-none bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded ps-2.5 pe-7 py-1 text-[11px] font-bold text-gray-700 dark:text-slate-200 focus:outline-none focus:border-indigo-500 dark:focus:border-slate-500 transition-all cursor-pointer shadow-xs"
+          >
+            <option value="draft" className="dark:bg-slate-900">{language === 'fa' ? 'ثبت موقت' : 'Draft'}</option>
+            <option value="published" className="dark:bg-slate-900">{language === 'fa' ? 'منتشر شده' : 'Published'}</option>
+            <option value="disabled" className="dark:bg-slate-900">{language === 'fa' ? 'غیرفعال' : 'Disabled'}</option>
+          </select>
+          <div className="absolute inset-y-0 start-auto end-2 flex items-center pointer-events-none text-gray-400">
+            <ChevronDown className="w-3.5 h-3.5" />
+          </div>
+        </div>
+
+        {/* Actions side-by-side */}
+        <div className="flex items-center gap-1.5">
+          {!isPublished && (
+            <button
+              type="button"
+              disabled={!isFormValid}
+              onClick={handleSaveEntity}
+              className={`h-[28px] px-2.5 flex items-center justify-center gap-1 rounded-md border text-xs font-semibold shadow-xs transition-all cursor-pointer ${
+                isFormValid
+                  ? 'border-indigo-200 bg-indigo-50/70 text-indigo-650 hover:bg-indigo-100 hover:text-indigo-750 dark:border-indigo-900/40 dark:bg-indigo-950/20 dark:text-indigo-400 dark:hover:bg-indigo-900/30'
+                  : 'border-gray-200 bg-gray-50 text-gray-400 dark:border-slate-800 dark:bg-slate-900/40 dark:text-slate-600 cursor-not-allowed shadow-none opacity-50'
+              }`}
+              title={language === 'fa' ? 'ذخیره' : 'Save'}
+            >
+              <Save className="w-3.5 h-3.5" />
+              <span>{language === 'fa' ? 'ذخیره' : 'Save'}</span>
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => setSelectedElement(selectedElement._backElement || null)}
+            className="p-1 rounded text-gray-400 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+            title={language === 'fa' ? 'انصراف' : 'Cancel'}
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
-      {/* Inputs */}
-      <div className="space-y-3">
+      {/* Main entity inputs */}
+      <div className="space-y-3.5">
         <PropertyField
           label={language === 'fa' ? 'نام نمایشی موجودیت' : 'Display Name'}
           type="text"
+          disabled={isPublished}
           value={displayName}
           onChange={(val) => setDisplayName(val)}
           placeholder={language === 'fa' ? 'مانند: اطلاعات تماس' : 'e.g., Contact Info'}
@@ -170,7 +213,7 @@ export const EntityCreatorSettings: React.FC<EntityCreatorSettingsProps> = ({
             type="text"
             value={systemName}
             onChange={handleSystemNameChange}
-            disabled={isEditing}
+            disabled={isEditing || isPublished}
             placeholder={language === 'fa' ? 'مانند: contact_info' : 'e.g., contact_info'}
           />
           {systemNameError && (
@@ -182,179 +225,264 @@ export const EntityCreatorSettings: React.FC<EntityCreatorSettingsProps> = ({
         </div>
       </div>
 
-      {/* Grid Table of Fields */}
-      <div className="pt-4 border-t border-gray-100 dark:border-slate-800 space-y-3">
-        <div className="flex justify-between items-center">
+      {/* Fields List Section */}
+      <div className="pt-4 border-t border-gray-200 dark:border-slate-800/60 relative">
+        <div className="flex justify-between items-center mb-3">
           <span className="text-xs font-bold text-gray-800 dark:text-slate-200">
             {language === 'fa' ? 'فیلدهای موجودیت' : 'Entity Fields'}
           </span>
           <button
             type="button"
-            onClick={() => setAddingField(true)}
-            className="text-xs font-bold text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-250 cursor-pointer"
+            onClick={handleAddNewDraftField}
+            className="p-1 rounded-md text-gray-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-gray-100 dark:hover:bg-slate-800/60 transition-all cursor-pointer"
+            title={language === 'fa' ? 'افزودن فیلد جدید' : 'Add New Field'}
           >
-            {language === 'fa' ? 'فیلد جدید' : 'New Field'}
+            <Plus className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Fields Grid List */}
-        <div className="border border-gray-100 dark:border-slate-850/80 rounded overflow-hidden max-h-60 overflow-y-auto">
-          <table className="w-full text-xs text-start">
-            <thead className="bg-gray-50 dark:bg-slate-900/60 text-gray-500 dark:text-slate-400 font-semibold border-b border-gray-100 dark:border-slate-800">
-              <tr>
-                <th className="py-2 px-2.5 text-right font-semibold">{language === 'fa' ? 'نام نمایشی' : 'Display'}</th>
-                <th className="py-2 px-2.5 text-right font-semibold">{language === 'fa' ? 'نوع' : 'Type'}</th>
-                <th className="py-2 px-2.5 text-center font-semibold w-10"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50 dark:divide-slate-800/40">
-              {fields.map((f) => (
-                <tr key={f.id} className="text-gray-700 dark:text-slate-300 hover:bg-gray-50/50 dark:hover:bg-slate-800/20 transition-colors">
-                  <td className="py-2 px-2.5 font-medium">
-                    <div className="flex flex-col text-right">
-                      <span>{f.label}</span>
-                      <span className="text-[10px] text-gray-400 font-mono">{f.id}</span>
-                    </div>
-                  </td>
-                  <td className="py-2 px-2.5 font-medium">
-                    <div className="flex flex-col text-right">
-                      <span>{getFieldTypeLabel(f.type)}</span>
-                      {f.type === 'comp-relation' && f.relatedEntity && (
-                        <span className="text-[9px] text-indigo-500 dark:text-indigo-400 font-semibold">
+        {/* Flat list of fields styled like cards */}
+        <div className="space-y-2.5">
+          {fields.map((f) => (
+            <div 
+              key={f.id}
+              onClick={(e) => {
+                e.stopPropagation();
+                const rect = e.currentTarget.getBoundingClientRect();
+                setPopoverPosition({
+                  top: rect.top,
+                  height: rect.height,
+                  right: rect.right
+                });
+                setEditingField({ ...f, isNew: false });
+              }}
+              className={`flex items-center justify-between py-2.5 px-3 rounded-xl border transition-all duration-150 group shadow-xs ${
+                editingField?.id === f.id
+                  ? 'bg-indigo-50/80 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-400 font-semibold border-indigo-200 dark:border-indigo-900/50 shadow-sm' 
+                  : 'bg-white dark:bg-slate-900/60 border-gray-200 dark:border-slate-800/70 hover:bg-gray-50/50 dark:hover:bg-slate-800/40 hover:border-indigo-100 dark:hover:border-slate-700 text-gray-700 dark:text-slate-300'
+              }`}
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="flex flex-col text-start min-w-0">
+                  {/* Farsi Label */}
+                  <span className="text-xs font-semibold truncate text-gray-800 dark:text-slate-200">
+                    {f.label || (language === 'fa' ? 'فیلد بدون نام' : 'Unnamed Field')}
+                  </span>
+                  {/* English ID • Type format in small text */}
+                  <div className="flex items-center gap-1.5 mt-0.5 text-[10px] text-gray-400 dark:text-slate-500 font-medium">
+                    <span className="font-mono text-[9px] bg-gray-50 dark:bg-slate-850 px-1 py-0.5 rounded border border-gray-200 dark:border-slate-800">{f.id}</span>
+                    <span className="text-gray-300 dark:text-slate-700">|</span>
+                    <span>{getFieldTypeLabel(f.type)}</span>
+                    {f.type === 'comp-relation' && f.relatedEntity && (
+                      <>
+                        <span className="text-gray-300 dark:text-slate-700">|</span>
+                        <span className="text-indigo-500 dark:text-indigo-400 font-semibold truncate">
                           ➔ {(entities[f.relatedEntity]?.name || f.relatedEntity)}
                         </span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="py-2 px-2.5 text-center">
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveField(f.id)}
-                      className="text-[10px] text-gray-400 hover:text-red-500 transition-colors cursor-pointer px-1 py-0.5"
-                    >
-                      {language === 'fa' ? 'حذف' : 'Delete'}
-                    </button>
-                  </td>
-                </tr>
-              ))}
-              {fields.length === 0 && (
-                <tr>
-                  <td colSpan={3} className="py-6 text-center text-gray-400 dark:text-slate-500">
-                    {language === 'fa' ? 'هنوز فیلدی تعریف نشده است' : 'No fields defined yet'}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Save Button */}
-      <button
-        type="button"
-        disabled={!isFormValid}
-        onClick={handleSaveEntity}
-        className={`w-full py-2 rounded text-xs font-semibold shadow-sm transition-all cursor-pointer ${
-          isFormValid
-            ? 'bg-gray-800 hover:bg-gray-900 text-white dark:bg-slate-700 dark:hover:bg-slate-650'
-            : 'bg-gray-100 text-gray-400 dark:bg-slate-800 dark:text-slate-500 cursor-not-allowed'
-        }`}
-      >
-        {language === 'fa' ? 'ثبت موجودیت' : 'Save Entity'}
-      </button>
-
-      {/* Inline Field Creator Popover */}
-      {addingField && (
-        <div 
-          className="absolute inset-0 bg-white/95 dark:bg-slate-900/95 z-20 p-5 flex flex-col justify-between"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="space-y-4">
-            <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-slate-800">
-              <h4 className="font-bold text-gray-850 dark:text-slate-200 text-xs">
-                {language === 'fa' ? 'افزودن فیلد جدید' : 'Add New Field'}
-              </h4>
-            </div>
-
-            <div className="space-y-3">
-              <PropertyField
-                label={language === 'fa' ? 'نام نمایشی فیلد' : 'Field Label'}
-                type="text"
-                value={fieldLabel}
-                onChange={(val) => {
-                  setFieldLabel(val);
-                  // Auto-generate system ID if empty/not touched
-                  if (!fieldId) {
-                    const guessed = val.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
-                    setFieldId(guessed);
-                  }
-                }}
-                placeholder={language === 'fa' ? 'مانند: سن کاربر' : 'e.g., User Age'}
-              />
-
-              <div className="relative">
-                <PropertyField
-                  label={language === 'fa' ? 'نام سیستمی فیلد (انگلیسی)' : 'Field ID (English)'}
-                  type="text"
-                  value={fieldId}
-                  onChange={handleFieldIdChange}
-                  placeholder={language === 'fa' ? 'مانند: user_age' : 'e.g., user_age'}
-                />
-                {fieldSystemNameError && (
-                  <div className="flex items-center gap-1 mt-1 text-[10px] text-red-500 font-semibold">
-                    <span>{fieldSystemNameError}</span>
+                      </>
+                    )}
                   </div>
-                )}
+                </div>
               </div>
 
-              <PropertyField
-                label={language === 'fa' ? 'نوع فیلد' : 'Field Type'}
-                type="select"
-                value={fieldType}
-                options={['comp-text', 'comp-number', 'comp-select', 'comp-check', 'comp-relation', 'comp-date']}
-                optionsLabels={
-                  language === 'fa'
-                    ? ['متنی (Text)', 'عددی (Number)', 'کشویی (Dropdown)', 'چک‌باکس (Checkbox)', 'رابطه‌ای (Relation)', 'تاریخ (Date)']
-                    : ['Text', 'Number', 'Dropdown', 'Checkbox', 'Relation', 'Date']
-                }
-                onChange={(val) => {
-                  setFieldType(val);
-                  if (val !== 'comp-relation') setRelatedEntity('');
-                }}
-              />
-
-              {fieldType === 'comp-relation' && (
-                <PropertyField
-                  label={language === 'fa' ? 'موجودیت مرتبط' : 'Related Entity'}
-                  type="select"
-                  value={relatedEntity}
-                  options={['', ...Object.keys(entities)]}
-                  optionsLabels={['-- انتخاب کنید --', ...Object.keys(entities).map(k => entities[k].name)]}
-                  onChange={(val) => setRelatedEntity(val)}
-                />
-              )}
+              <div className="flex items-center gap-1.5 flex-shrink-0">
+                {/* Remove Action (Draft mode only, hidden in published status) */}
+                {!isPublished && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRemoveField(f.id);
+                    }}
+                    className="opacity-0 group-hover:opacity-100 rounded p-1 text-gray-400 hover:text-red-500 cursor-pointer transition-opacity duration-150"
+                    title={language === 'fa' ? 'حذف فیلد' : 'Delete Field'}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
-
-          <div className="flex gap-2 pt-4 border-t border-gray-100 dark:border-slate-800">
-            <button
-              type="button"
-              onClick={handleAddField}
-              disabled={!fieldLabel.trim() || !fieldId.trim() || !!fieldSystemNameError || (fieldType === 'comp-relation' && !relatedEntity)}
-              className="flex-1 py-2 bg-gray-800 hover:bg-gray-900 text-white rounded text-xs font-semibold shadow-sm transition-all disabled:bg-gray-100 disabled:text-gray-400 dark:disabled:bg-slate-800 dark:disabled:text-slate-500 cursor-pointer"
-            >
-              {language === 'fa' ? 'تایید' : 'Add'}
-            </button>
-            <button
-              type="button"
-              onClick={() => setAddingField(false)}
-              className="flex-1 py-2 bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-700 rounded text-xs font-semibold transition-all cursor-pointer"
-            >
-              {language === 'fa' ? 'انصراف' : 'Cancel'}
-            </button>
-          </div>
+          ))}
+          {fields.length === 0 && (
+            <div className="py-8 px-4 text-center text-gray-450 dark:text-slate-400 text-xs border border-dashed border-gray-200 dark:border-slate-800 rounded-xl bg-gray-50/50 dark:bg-slate-900/10 flex flex-col items-center justify-center space-y-3">
+              <div className="w-10 h-10 rounded-full bg-indigo-50 dark:bg-indigo-950/40 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                <Database className="w-5 h-5" />
+              </div>
+              <div className="max-w-[200px] leading-relaxed">
+                {language === 'fa' ? 'هنوز فیلدی تعریف نشده است. با زدن دکمه + فیلد جدید اضافه کنید.' : 'No fields defined yet. Press + to add a field.'}
+              </div>
+            </div>
+          )}
         </div>
-      )}
+
+        {/* Popover Field Editor via Portal */}
+        {editingField && popoverPosition && createPortal(
+          <AnimatePresence>
+            {(() => {
+              const hasDuplicateId = fields.some(other => other.id === editingField.id && other.id !== (selectedElement.fields?.find((x: any) => x.id === editingField.id)?.id || editingField.id));
+              const isFieldValid = editingField.label.trim() && editingField.id.trim() && !editingField.id.startsWith('field_') && !hasDuplicateId && (editingField.type !== 'comp-relation' || editingField.relatedEntity);
+
+              // Compute vertical centering with clicked element
+              const popoverHeight = 360;
+              const viewportHeight = window.innerHeight;
+              const middleY = popoverPosition.top + popoverPosition.height / 2;
+
+              let top = middleY - 60;
+              if (top < 10) top = 10;
+              if (top + popoverHeight > viewportHeight - 10) {
+                top = viewportHeight - popoverHeight - 10;
+              }
+
+              const arrowTop = middleY - top;
+
+              return (
+                <div 
+                  dir={language === 'fa' ? 'rtl' : 'ltr'} 
+                  className="font-vazir text-start fixed inset-0 z-[9999] pointer-events-none"
+                >
+                  {/* Backdrop overlay */}
+                  <div 
+                    className="absolute inset-0 bg-transparent pointer-events-auto cursor-default"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setEditingField(null);
+                    }}
+                  />
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95, x: 10 }}
+                    animate={{ opacity: 1, scale: 1, x: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, x: 10 }}
+                    transition={{ duration: 0.15, ease: 'easeOut' }}
+                    style={{ 
+                      top: `${top}px`, 
+                      left: `${popoverPosition.right + 12}px`,
+                      width: '280px'
+                    }}
+                    className="absolute z-[10000] bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl shadow-xl p-4 space-y-3.5 text-start pointer-events-auto"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {/* Left pointing arrow rotated 45 degrees */}
+                    <div 
+                      style={{ top: `${arrowTop}px` }} 
+                      className="absolute left-[-6px] w-3 h-3 bg-white dark:bg-slate-900 border-t border-l border-gray-200 dark:border-slate-800 rotate-45 -translate-y-1/2" 
+                    />
+
+                    <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-slate-800/60">
+                      <span className="text-xs font-bold text-gray-805 dark:text-slate-200">
+                        {editingField.isNew
+                          ? (language === 'fa' ? 'فیلد جدید' : 'New Field')
+                          : (language === 'fa' ? 'ویرایش فیلد' : 'Edit Field')}
+                      </span>
+                      <button 
+                        type="button" 
+                        onClick={() => setEditingField(null)}
+                        className="p-1 rounded-md text-gray-400 hover:text-gray-650 dark:hover:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+
+                    <div className="space-y-3">
+                      <PropertyField
+                        label={language === 'fa' ? 'نام نمایشی فیلد' : 'Field Label'}
+                        type="text"
+                        disabled={isPublished}
+                        value={editingField.label || ''}
+                        onChange={(val) => {
+                          let nextId = editingField.id;
+                          if (editingField.id.startsWith('field_')) {
+                            const guessed = val.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
+                            if (guessed) nextId = guessed;
+                          }
+                          setEditingField({ ...editingField, label: val, name: val, id: nextId });
+                        }}
+                      />
+
+                      <div className="relative">
+                        <PropertyField
+                          label={language === 'fa' ? 'نام سیستمی فیلد' : 'Field ID'}
+                          type="text"
+                          disabled={isPublished}
+                          value={editingField.id.startsWith('field_') ? '' : editingField.id}
+                          onChange={(val) => {
+                            const cleanVal = val.replace(/[^a-zA-Z0-9_]/g, '');
+                            setEditingField({ ...editingField, id: cleanVal });
+                          }}
+                        />
+                        {!isPublished && hasDuplicateId && (
+                          <div className="text-[9px] text-red-500 font-semibold mt-0.5">
+                            {language === 'fa' ? 'شناسه تکراری است' : 'Duplicate ID'}
+                          </div>
+                        )}
+                      </div>
+
+                      <PropertyField
+                        label={language === 'fa' ? 'نوع فیلد' : 'Field Type'}
+                        type="select"
+                        disabled={isPublished}
+                        value={editingField.type || 'comp-text'}
+                        options={['comp-text', 'comp-number', 'comp-select', 'comp-check', 'comp-relation', 'comp-date']}
+                        optionsLabels={
+                          language === 'fa'
+                            ? ['متنی (Text)', 'عددی (Number)', 'کشویی (Dropdown)', 'چک‌باکس (Checkbox)', 'رابطه‌ای (Relation)', 'تاریخ (Date)']
+                            : ['Text', 'Number', 'Dropdown', 'Checkbox', 'Relation', 'Date']
+                        }
+                        onChange={(val) => {
+                          setEditingField({ ...editingField, type: val, relatedEntity: undefined });
+                        }}
+                      />
+
+                      {editingField.type === 'comp-relation' && (
+                        <PropertyField
+                          label={language === 'fa' ? 'موجودیت مرتبط' : 'Related Entity'}
+                          type="select"
+                          disabled={isPublished}
+                          value={editingField.relatedEntity || ''}
+                          options={['', ...Object.keys(entities).filter(k => k !== systemName)]}
+                          optionsLabels={['-- انتخاب کنید --', ...Object.keys(entities).filter(k => k !== systemName).map(k => entities[k].name)]}
+                          onChange={(val) => {
+                            setEditingField({ ...editingField, relatedEntity: val });
+                          }}
+                        />
+                      )}
+                    </div>
+
+                    {/* Popover Actions */}
+                    {!isPublished && (
+                      <div className="flex gap-2 pt-3 border-t border-gray-200 dark:border-slate-800/60">
+                        <button
+                          type="button"
+                          disabled={!isFieldValid}
+                          onClick={() => {
+                            if (editingField.isNew) {
+                              setFields([...fields, { ...editingField, isNew: undefined }]);
+                            } else {
+                              setFields(fields.map(f => f.id === editingField.id ? { ...editingField, isNew: undefined } : f));
+                            }
+                            setEditingField(null);
+                          }}
+                          className="flex-1 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white disabled:bg-gray-100 disabled:text-gray-400 dark:disabled:bg-slate-800 dark:disabled:text-slate-600 rounded-xl text-xs font-semibold shadow-xs transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                        >
+                          <Save className="w-3.5 h-3.5" />
+                          <span>{language === 'fa' ? 'ذخیره' : 'Save'}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditingField(null)}
+                          className="flex-1 py-1.5 bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-750 rounded-xl text-xs font-semibold transition-all cursor-pointer"
+                        >
+                          {language === 'fa' ? 'انصراف' : 'Cancel'}
+                        </button>
+                      </div>
+                    )}
+                  </motion.div>
+                </div>
+              );
+            })()}
+          </AnimatePresence>,
+          document.body
+        )}
+      </div>
     </div>
   );
 };

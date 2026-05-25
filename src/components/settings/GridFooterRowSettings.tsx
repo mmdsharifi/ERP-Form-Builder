@@ -7,7 +7,6 @@ interface GridFooterRowSettingsProps {
   updateElementProp: (prop: string, value: any) => void;
   setSelectedElement: (el: any) => void;
   level2Tabs: any[];
-  level3Tabs: any[];
   language: 'fa' | 'en';
   t: (key: string) => string;
 }
@@ -17,15 +16,12 @@ export const GridFooterRowSettings: React.FC<GridFooterRowSettingsProps> = ({
   updateElementProp,
   setSelectedElement,
   level2Tabs,
-  level3Tabs,
   language,
   t
 }) => {
   const tabId = selectedElement._tabId;
-  const context = selectedElement._context;
-  const tab = context === 'l2'
-    ? level2Tabs.find(t => t.id === tabId)
-    : level3Tabs.find(t => t.id === tabId);
+  const context = 'l2';
+  const tab = level2Tabs.find(t => t.id === tabId);
   const columns = tab?.gridColumns || [];
 
   const isNumericOp = ['sum', 'avg', 'min', 'max'].includes(selectedElement.operator);
@@ -38,14 +34,12 @@ export const GridFooterRowSettings: React.FC<GridFooterRowSettingsProps> = ({
     <div className="space-y-4">
       <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-slate-800">
         <h3 className="font-bold text-gray-700 dark:text-slate-200 text-sm">
-          {language === 'fa' ? 'تنظیمات سطر فوتر' : 'Footer Row Settings'}
+          {language === 'fa' ? 'تنظیمات سطر تجمیعی' : 'Summary Row Settings'}
         </h3>
         <button
           type="button"
           onClick={() => {
-            const pTab = context === 'l2'
-              ? level2Tabs.find(t => t.id === tabId)
-              : level3Tabs.find(t => t.id === tabId);
+            const pTab = level2Tabs.find(t => t.id === tabId);
             if (pTab) {
               setSelectedElement({
                 ...pTab,
