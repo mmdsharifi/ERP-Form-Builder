@@ -1,10 +1,14 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+# ERP Form Builder — Modular, Premium RTL-First Drag-&-Drop Designer
 
-# ERP Form Builder — Modular, LLM-Optimized Design
+A state-of-the-art drag-and-drop form builder tailored for complex enterprise ERP environments. Designed with native RTL (Right-to-Left) Persian layout support, premium micro-animations (Framer Motion/react), and a clean glassmorphism aesthetic.
 
-This project contains everything you need to run and develop the ERP Form Builder locally. It has been refactored into a highly modular component structure specifically optimized to minimize LLM token burn.
+## 🌟 Key Features
+
+- 📐 **Hierarchical Form Designer**: Build nested tab groups, grids, and primary fields.
+- 🗄️ **Database Schema Auto-Binding**: Create new database entities with multi-type fields (Text, Number, Dropdown, Checkbox, Date, Relations) and connect them to form grids or panels.
+- 🎛️ **Premium Popover Editors**: Right-floating, Portal-rendered summary rows and field editor dialogs that align vertically with the clicked item and render pointing arrows.
+- 🔄 **State-driven Navigation**: Seamlessly navigate between panels with automatic selection of newly created database schemas.
+- 🌓 **Theme-aware Aesthetics**: Fully tailored light and dark modes with circular theme-switching view transitions.
 
 ## 🚀 Run Locally
 
@@ -37,4 +41,5 @@ This project contains three dedicated documents that serve as the project's "men
 - `src/hooks/useFormState.ts`: Centralized state management hook.
 - `src/components/canvas/`: Main form canvas (`MainPanel.tsx`) and tab drill-down view (`DetailPanel.tsx`).
 - `src/components/layout/`: Toolbar (`Header.tsx`), Component toolbox (`Sidebar.tsx`), and Editor properties (`SettingsPanel.tsx`).
+- `src/components/settings/`: Dedicated configuration panels for components (`TabPanelSettings.tsx`, `EntityCreatorSettings.tsx`, `FieldSettings.tsx`).
 - `src/components/shared/`: Reusable, atomic controls (Toggles, Dropdowns, Formula editors).
