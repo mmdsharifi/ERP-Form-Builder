@@ -1,5 +1,5 @@
 import React from 'react';
-import { Settings } from 'lucide-react';
+import { Settings, Plus, Edit, Database } from 'lucide-react';
 import { motion } from 'motion/react';
 import { PropertyField } from '../shared/PropertyField';
 import { TabPanelSettings } from '../settings/TabPanelSettings';
@@ -12,7 +12,6 @@ interface SettingsPanelProps {
   updateElementProp: (prop: string, value: any) => void;
   boundMainEntity: string;
   level2Tabs: any[];
-  level3Tabs: any[];
   mainGroups: any[];
   setMainPanelName: (name: string) => void;
   setSelectedElement: (el: any) => void;
@@ -21,6 +20,7 @@ interface SettingsPanelProps {
   t: (key: string) => string;
   entities: Record<string, { name: string; fields: any[] }>;
   addEntity: (systemName: string, name: string, fields: any[]) => void;
+  mainPanelColumns: number;
 }
 
 export const SettingsPanel: React.FC<SettingsPanelProps> = ({
@@ -28,7 +28,6 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
   updateElementProp,
   boundMainEntity,
   level2Tabs,
-  level3Tabs,
   mainGroups,
   setMainPanelName,
   setSelectedElement,
@@ -36,13 +35,25 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
   language,
   t,
   entities,
-  addEntity
+  addEntity,
+  mainPanelColumns
 }) => {
   return (
     <aside className="w-72 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-r border-white/40 dark:border-slate-800 shadow-[-4px_0_15px_-3px_rgba(0,0,0,0.05)] flex flex-col z-10">
       <div className="p-4 border-b border-gray-100 dark:border-slate-800 flex items-center gap-2 bg-gray-50/50 dark:bg-slate-900/50 text-start">
-        <Settings className="w-4 h-4 text-gray-500" />
-        <h2 className="font-bold text-gray-700 dark:text-slate-300 text-sm">{t('settings')}</h2>
+        {selectedElement?.type === 'entity-creator' ? (
+          <Database className="w-4 h-4 text-gray-500" />
+        ) : (
+          <Settings className="w-4 h-4 text-gray-500" />
+        )}
+        <h2 className="font-bold text-gray-700 dark:text-slate-300 text-sm">
+          {selectedElement?.type === 'entity-creator'
+            ? (selectedElement.id !== 'new_entity_creator'
+              ? (language === 'fa' ? 'ویرایش موجودیت' : 'Edit Entity')
+              : (language === 'fa' ? 'موجودیت جدید' : 'New Entity'))
+            : t('settings')
+          }
+        </h2>
       </div>
       <div className="flex-1 overflow-y-auto p-5 space-y-5">
         {(() => {
@@ -50,7 +61,6 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
           if (selectedElement) {
             if (selectedElement._context === 'main') currentEntityKey = boundMainEntity;
             else if (selectedElement._context === 'l2') currentEntityKey = level2Tabs.find(t => t.id === selectedElement._tabId)?.boundEntity || '';
-            else if (selectedElement._context === 'l3') currentEntityKey = level3Tabs.find(t => t.id === selectedElement._tabId)?.boundEntity || '';
           }
           const currentEntityName = currentEntityKey ? (entities[currentEntityKey]?.name || currentEntityKey) : '';
           const currentEntityFieldsObj = currentEntityKey ? ((entities as any)[currentEntityKey]?.fields || []) : [];
@@ -60,7 +70,6 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
             let groupsInContext: any[] = [];
             if (selectedElement._context === 'main') groupsInContext = mainGroups;
             else if (selectedElement._context === 'l2') groupsInContext = level2Tabs.find(t => t.id === selectedElement._tabId)?.groups || [];
-            else if (selectedElement._context === 'l3') groupsInContext = level3Tabs.find(t => t.id === selectedElement._tabId)?.groups || [];
             
             usedFields = groupsInContext.flatMap(g => g.fields).map(f => f.boundSystemField).filter(Boolean);
           }
@@ -71,10 +80,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
           let numericColumns: any[] = [];
           if (selectedElement && selectedElement.type === 'comp-formula') {
             const tabId = selectedElement._tabId;
-            const context = selectedElement._context;
-            const tab = context === 'l2'
-              ? level2Tabs.find(t => t.id === tabId)
-              : level3Tabs.find(t => t.id === tabId);
+            const tab = level2Tabs.find(t => t.id === tabId);
             const columns = tab?.gridColumns || [];
             numericColumns = columns
               .filter((col: any) => col.id !== selectedElement.id && (col.type === 'comp-number' || col.type === 'comp-formula' || col.type === 'comp-grid-col'))
@@ -100,26 +106,101 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
               ) : selectedElement.type?.includes('group') ? (
                 <>
                   <PropertyField label={t('groupName')} type="text" value={selectedElement.name} onChange={(val) => updateElementProp('name', val)} info={t('groupNameInfo')} />
-                  <PropertyField label={t('columnsCount')} type="select" value={selectedElement.columns?.toString()} options={['1', '2', '3', '4']} optionsLabels={[t('oneColumn'), t('twoColumns'), t('threeColumns'), t('fourColumns')]} onChange={(val) => updateElementProp('columns', Number(val))} info={t('columnsCountInfo')} />
                 </>
               ) : selectedElement.type === 'container-main' ? (
-                <>
-                  <PropertyField label={t('panelTitle')} type="text" value={selectedElement.label} info={t('panelTitleInfo')} onChange={(val) => {
-                    updateElementProp('label', val);
-                  }} />
-                  <PropertyField label={t('bindEntity')} type="select" value={boundMainEntity} options={['', ...Object.keys(entities)]} optionsLabels={[t('disconnect'), ...Object.keys(entities).map(k => entities[k].name)]} onChange={(val) => handleBindEntity('main', val)} info={t('bindEntityInfo')} />
-                </>
+                <div className="space-y-6">
+                  {/* Group 1: Connected Entity */}
+                  <div className="space-y-3 text-start">
+                    <div className="flex items-center justify-between mb-3 pb-1 border-b border-gray-100 dark:border-slate-800/40">
+                      <span className="text-xs font-bold text-gray-800 dark:text-slate-200">
+                        {language === 'fa' ? 'موجودیت متصل' : 'Connected Entity'}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedElement({
+                          type: 'entity-creator',
+                          id: 'new_entity_creator',
+                          title: '',
+                          systemName: '',
+                          fields: [],
+                          _backElement: selectedElement
+                        })}
+                        className="p-1 rounded-md text-gray-500 dark:text-slate-400 hover:text-indigo-650 dark:hover:text-indigo-400 hover:bg-gray-100 dark:hover:bg-slate-800/60 transition-all cursor-pointer"
+                        title={language === 'fa' ? 'تعریف موجودیت جدید' : 'New Entity'}
+                      >
+                        <Plus className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    <div className="flex items-end gap-1.5 w-full">
+                      <div className="flex-1 min-w-0">
+                        <PropertyField 
+                          label={language === 'fa' ? 'اتصال موجودیت' : 'Connected Entity'} 
+                          type="select" 
+                          value={boundMainEntity} 
+                          options={['', ...Object.keys(entities)]} 
+                          optionsLabels={[language === 'fa' ? '-- قطع اتصال --' : '-- Disconnect --', ...Object.keys(entities).map(k => entities[k].name)]} 
+                          onChange={(val) => handleBindEntity('main', val)} 
+                          info={t('bindEntityInfo')} 
+                        />
+                      </div>
+                      {boundMainEntity && entities[boundMainEntity] && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedElement({
+                              type: 'entity-creator',
+                              id: boundMainEntity,
+                              title: entities[boundMainEntity].name,
+                              systemName: boundMainEntity,
+                              fields: entities[boundMainEntity].fields.map((f: any) => ({
+                                ...f,
+                                status: f.status || 'published'
+                              })),
+                              _backElement: selectedElement
+                            });
+                          }}
+                          className="flex-shrink-0 h-[30px] w-[30px] bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-750 text-gray-650 dark:text-slate-300 border border-gray-200 dark:border-slate-700 rounded hover:shadow-xs transition-all cursor-pointer flex items-center justify-center shadow-sm"
+                          title={language === 'fa' ? 'ویرایش موجودیت' : 'Edit Entity'}
+                        >
+                          <Edit className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Group 2: Panel Settings */}
+                  <div className="pt-4 border-t border-gray-200 dark:border-slate-800/60 space-y-3 text-start">
+                    <div className="flex items-center justify-between mb-3 pb-1 border-b border-gray-100 dark:border-slate-800/40">
+                      <span className="text-xs font-bold text-gray-800 dark:text-slate-200">
+                        {language === 'fa' ? 'تنظیمات ظاهری پنل' : 'Panel Settings'}
+                      </span>
+                    </div>
+
+                    <PropertyField 
+                      label={language === 'fa' ? 'عنوان پنل' : t('panelTitle')} 
+                      type="text" 
+                      value={selectedElement.label} 
+                      info={t('panelTitleInfo')} 
+                      onChange={(val) => {
+                        updateElementProp('label', val);
+                      }} 
+                    />
+
+                    <PropertyField 
+                      label={language === 'fa' ? 'تعداد ستون‌ها' : t('columnsCount')} 
+                      type="select" 
+                      value={selectedElement.columns?.toString() || '5'} 
+                      options={['1', '2', '3', '4', '5', '6']} 
+                      optionsLabels={[t('oneColumn'), t('twoColumns'), t('threeColumns'), t('fourColumns'), t('fiveColumns'), t('sixColumns')]} 
+                      onChange={(val) => updateElementProp('columns', Number(val))} 
+                      info={t('columnsCountInfo')} 
+                    />
+                  </div>
+                </div>
               ) : selectedElement.type === 'grid-footer-row' ? (
-                <GridFooterRowSettings 
-                  selectedElement={selectedElement}
-                  updateElementProp={updateElementProp}
-                  setSelectedElement={setSelectedElement}
-                  level2Tabs={level2Tabs}
-                  level3Tabs={level3Tabs}
-                  language={language}
-                  t={t}
-                />
-              ) : selectedElement.type === 'container-l2-panel' || selectedElement.type === 'container-l3-panel' ? (
+                null
+              ) : selectedElement.type === 'container-l2-panel' ? (
                 <TabPanelSettings 
                   selectedElement={selectedElement} 
                   updateElementProp={updateElementProp}

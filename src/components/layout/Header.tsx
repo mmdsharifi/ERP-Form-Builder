@@ -31,16 +31,56 @@ export const Header: React.FC<HeaderProps> = ({ language, setLanguage, onReset, 
     };
   }, [isDropdownOpen]);
 
-  const toggleTheme = () => {
+  const toggleTheme = (event?: React.MouseEvent) => {
     const nextDark = !isDark;
-    setIsDark(nextDark);
-    if (nextDark) {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
+
+    if (!event || !(document as any).startViewTransition) {
+      setIsDark(nextDark);
+      if (nextDark) {
+        document.documentElement.classList.add('dark');
+        localStorage.setItem('theme', 'dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+        localStorage.setItem('theme', 'light');
+      }
+      return;
     }
+
+    const x = event.clientX;
+    const y = event.clientY;
+    const right = window.innerWidth - x;
+    const bottom = window.innerHeight - y;
+    const maxRadius = Math.hypot(Math.max(x, right), Math.max(y, bottom));
+
+    const transition = (document as any).startViewTransition(() => {
+      setIsDark(nextDark);
+      if (nextDark) {
+        document.documentElement.classList.add('dark');
+        localStorage.setItem('theme', 'dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+        localStorage.setItem('theme', 'light');
+      }
+    });
+
+    transition.ready.then(() => {
+      const clipPath = [
+        `circle(0px at ${x}px ${y}px)`,
+        `circle(${maxRadius}px at ${x}px ${y}px)`
+      ];
+      document.documentElement.animate(
+        {
+          clipPath: nextDark ? clipPath : [...clipPath].reverse(),
+        },
+        {
+          duration: 400,
+          easing: 'ease-out',
+          pseudoElement: nextDark
+            ? '::view-transition-new(root)'
+            : '::view-transition-old(root)',
+        }
+      );
+    });
   };
 
   const handleResetClick = () => {
