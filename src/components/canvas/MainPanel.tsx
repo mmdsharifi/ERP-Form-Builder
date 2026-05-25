@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { ChevronDown, Database } from 'lucide-react';
 import { FormPanel } from '../FormPanel';
@@ -18,6 +18,10 @@ interface MainPanelProps {
   handleBindEntity: (zone: string, entityKey: string) => void;
   draggedType: 'field' | 'column' | null;
   setDraggedType: (type: 'field' | 'column' | null) => void;
+  mainPanelColumns: number;
+  onUpdateFieldProp?: (prop: string, value: any) => void;
+  language: 'fa' | 'en';
+  t: (key: string) => string;
 }
 
 export const MainPanel: React.FC<MainPanelProps> = ({
@@ -35,13 +39,18 @@ export const MainPanel: React.FC<MainPanelProps> = ({
   entities,
   handleBindEntity,
   draggedType,
-  setDraggedType
+  setDraggedType,
+  mainPanelColumns,
+  onUpdateFieldProp,
+  language
 }) => {
+  const [isLoading, setIsLoading] = useState(false);
+
   return (
     <motion.div 
       layout
       className={`bg-white dark:bg-slate-900 rounded-xl transition-all border-2 ${selectedElement?.id === 'main-panel' ? 'border-indigo-500 dark:border-indigo-400 shadow-[0_0_0_4px_rgba(99,102,241,0.15)] dark:shadow-[0_0_0_4px_rgba(99,102,241,0.25)] z-10 relative' : 'border-gray-100 dark:border-slate-800/80 hover:border-indigo-300 dark:hover:border-indigo-500 hover:ring-2 hover:ring-indigo-100 dark:hover:ring-indigo-950/40 hover:shadow-md cursor-pointer shadow-sm'}`}
-      onClick={() => setSelectedElement({ id: 'main-panel', type: 'container-main', label: mainPanelName, _context: 'main' })}
+      onClick={() => setSelectedElement({ id: 'main-panel', type: 'container-main', label: mainPanelName, columns: mainPanelColumns, _context: 'main' })}
     >
       <div className="p-5 border-b border-gray-100 dark:border-slate-800/80 flex justify-between items-center bg-gray-50/30 dark:bg-slate-900/30 rounded-t-xl">
         <div className="flex items-center gap-2">
@@ -56,7 +65,20 @@ export const MainPanel: React.FC<MainPanelProps> = ({
         </div>
       </div>
       <div className="p-6">
-        {!boundMainEntity ? (
+        {isLoading ? (
+          <div className="relative min-h-[180px] p-6 border border-gray-100 dark:border-slate-800 rounded-xl overflow-hidden bg-gray-50/30 dark:bg-slate-900/30 flex flex-col justify-center gap-4 text-center">
+            <div className="animate-scan" />
+            <div className="flex items-center justify-center gap-3 text-indigo-600 dark:text-indigo-400 mb-2">
+              <Database className="w-5 h-5 animate-bounce" />
+              <span className="text-xs font-bold">{language === 'fa' ? 'در حال اتصال به موجودیت و همگام‌سازی فیلدها...' : 'Connecting to entity and syncing fields...'}</span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="animate-shimmer h-14 rounded-lg border border-gray-100 dark:border-slate-800" />
+              <div className="animate-shimmer h-14 rounded-lg border border-gray-100 dark:border-slate-800" />
+              <div className="animate-shimmer h-14 rounded-lg border border-gray-100 dark:border-slate-800" />
+            </div>
+          </div>
+        ) : !boundMainEntity ? (
           <div className="flex flex-col items-center justify-center py-12 px-4 border-2 border-dashed border-gray-200 dark:border-slate-800 rounded-xl bg-gray-50 dark:bg-slate-900/30 text-center" onClick={(e) => e.stopPropagation()}>
             <Database className="w-6 h-6 text-indigo-500 mb-4" />
             <h4 className="font-bold text-gray-700 dark:text-slate-200 mb-2">{t('connectPanelToEntity')}</h4>
@@ -65,7 +87,11 @@ export const MainPanel: React.FC<MainPanelProps> = ({
                 value="" 
                 onChange={(e) => {
                   const val = e.target.value;
-                  handleBindEntity('main', val);
+                  setIsLoading(true);
+                  setTimeout(() => {
+                    handleBindEntity('main', val);
+                    setIsLoading(false);
+                  }, 800);
                 }} 
                 onClick={(e) => e.stopPropagation()} 
                 className="w-full appearance-none bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg text-sm pr-4 pl-10 py-2 shadow-sm focus:ring-2 focus:ring-indigo-500 font-medium text-gray-700 dark:text-slate-300 cursor-pointer"
@@ -84,7 +110,8 @@ export const MainPanel: React.FC<MainPanelProps> = ({
           <FormPanel 
             groups={mainGroups} 
             targetZone="main"
-            selectedElementId={selectedElement?.id}
+            formColumns={mainPanelColumns}
+            selectedElement={selectedElement}
             onSelect={(element) => setSelectedElement({ ...element, _context: 'main' })}
             onDeleteGroup={(e, gid) => handleDeleteGroup(e, gid, 'main')}
             onDeleteField={(e, id, gid) => handleDeleteElement(e, id, 'main', gid)}
@@ -97,6 +124,8 @@ export const MainPanel: React.FC<MainPanelProps> = ({
             }}
             t={t}
             draggedType={draggedType}
+            onUpdateFieldProp={onUpdateFieldProp}
+            language={language}
           />
         )}
       </div>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Plus, Trash2, ChevronLeft, ChevronRight, FunctionSquare, GripVertical } from 'lucide-react';
+import { Search, Plus, Trash2, ChevronLeft, ChevronRight, FunctionSquare, GripVertical, X } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -44,7 +44,7 @@ interface GridTableProps {
   footerLabel?: string;
   footerRows?: FooterRowConfig[];
   onUpdateFooterRows?: (rows: FooterRowConfig[]) => void;
-  selectedElementId?: string;
+  selectedElement?: any;
   onSelect: (element: any) => void;
   onDeleteColumn: (e: React.MouseEvent, id: string) => void;
   onDrillDown: (row: any) => void;
@@ -151,7 +151,7 @@ export const GridTable: React.FC<GridTableProps> = ({
   footerLabel,
   footerRows,
   onUpdateFooterRows,
-  selectedElementId,
+  selectedElement,
   onSelect,
   onDeleteColumn,
   onDrillDown,
@@ -163,12 +163,52 @@ export const GridTable: React.FC<GridTableProps> = ({
   isDraggingColumn,
 }) => {
   const hasFooter = !!footerLabel || columns.some(c => c.footerAgg && c.footerAgg !== 'none');
+  const hasNumericColumn = columns.some(col => col.type === 'comp-number' || col.type === 'comp-formula');
+  
+  const hasFooterRows = footerRows && footerRows.length > 0;
+  const showExtraCol = hasFooterRows || (hasFooter && columns.length > 0);
 
-  // Inline editing state for footer row titles
-  const [editingRowId, setEditingRowId] = useState<string | null>(null);
-  const [editTitleDraft, setEditTitleDraft] = useState('');
   const [isDragOverTable, setIsDragOverTable] = useState(false);
   const [dragOverColId, setDragOverColId] = useState<string | null>(null);
+  const [draggedRowId, setDraggedRowId] = useState<string | null>(null);
+  const [dragOverRowId, setDragOverRowId] = useState<string | null>(null);
+
+  const handleDragStartRow = (e: React.DragEvent, id: string) => {
+    e.stopPropagation();
+    e.dataTransfer.setData('draggedFooterRowId', id);
+    setDraggedRowId(id);
+  };
+
+  const handleDragEndRow = () => {
+    setDraggedRowId(null);
+    setDragOverRowId(null);
+  };
+
+  const handleDragOverRow = (e: React.DragEvent, id: string) => {
+    e.preventDefault();
+    if (draggedRowId && draggedRowId !== id) {
+      setDragOverRowId(id);
+    }
+  };
+
+  const handleDropRow = (e: React.DragEvent, targetId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const draggedId = e.dataTransfer.getData('draggedFooterRowId') || draggedRowId;
+    setDraggedRowId(null);
+    setDragOverRowId(null);
+
+    if (draggedId && draggedId !== targetId && footerRows && onUpdateFooterRows) {
+      const draggedIdx = footerRows.findIndex(r => r.id === draggedId);
+      const targetIdx = footerRows.findIndex(r => r.id === targetId);
+      if (draggedIdx !== -1 && targetIdx !== -1) {
+        const next = [...footerRows];
+        const [moved] = next.splice(draggedIdx, 1);
+        next.splice(targetIdx, 0, moved);
+        onUpdateFooterRows(next);
+      }
+    }
+  };
 
   const handleDragStartColumn = (e: React.DragEvent, id: string) => {
     e.stopPropagation();
@@ -202,14 +242,6 @@ export const GridTable: React.FC<GridTableProps> = ({
     return map[agg] ?? agg;
   };
 
-  const handleSaveTitle = (rowId: string) => {
-    if (footerRows && onUpdateFooterRows) {
-      const next = footerRows.map(r => r.id === rowId ? { ...r, title: editTitleDraft } : r);
-      onUpdateFooterRows(next);
-    }
-    setEditingRowId(null);
-  };
-
   return (
     <>
       {/* Toolbar */}
@@ -234,12 +266,12 @@ export const GridTable: React.FC<GridTableProps> = ({
 
       {/* Table */}
       <div 
-        className={`overflow-x-auto rounded-xl border transition-all duration-200 ${
+        className={`overflow-x-auto rounded-xl border transition-all duration-200 min-h-[280px] flex flex-col justify-between ${
           isDragOverTable
             ? 'ring-2 ring-indigo-500 bg-indigo-50/10 dark:bg-indigo-950/10 border-2 border-dashed border-indigo-500 dark:border-indigo-400 scale-[1.005]'
             : isDraggingColumn
             ? 'border-2 border-dashed border-indigo-300/40 dark:border-slate-800/80 bg-indigo-50/5 dark:bg-indigo-950/5 hover:border-indigo-300 dark:hover:border-indigo-500/50'
-            : 'border-transparent'
+            : 'border-gray-200 dark:border-slate-800/80'
         }`}
         onDragOver={(e) => {
           e.preventDefault();
@@ -254,14 +286,19 @@ export const GridTable: React.FC<GridTableProps> = ({
           onDrop(e);
         }}
       >
-        <table className="w-full text-sm text-start">
+        <table className="w-full text-sm text-start h-full flex-1">
           {/* ── THEAD ── */}
           <thead>
             <tr className="text-gray-500 dark:text-slate-400 border-b border-gray-200 dark:border-slate-800">
-              {settings.showCheckbox && (
+              {(settings.showCheckbox || hasFooterRows) && (
                 <th className="py-2 px-3 w-8">
-                  <input type="checkbox" className="rounded text-indigo-500 dark:border-slate-700 dark:bg-slate-800" />
+                  {settings.showCheckbox ? (
+                    <input type="checkbox" className="rounded text-indigo-500 dark:border-slate-700 dark:bg-slate-800" />
+                  ) : null}
                 </th>
+              )}
+              {showExtraCol && (
+                <th className="py-2 px-3 w-44 min-w-[150px] text-start font-semibold" />
               )}
               {columns.map(col => (
                 <th
@@ -284,7 +321,7 @@ export const GridTable: React.FC<GridTableProps> = ({
                   className={`py-2 ps-6 pe-3 font-semibold cursor-grab active:cursor-grabbing transition-all duration-200 ease-out relative group ${
                     dragOverColId === col.id
                       ? 'rtl:-translate-x-2.5 ltr:translate-x-2.5 bg-indigo-50 dark:bg-indigo-950/30 border-s-4 border-s-indigo-500 dark:border-s-indigo-400 ring-2 ring-indigo-500/15'
-                      : selectedElementId === col.id
+                      : (selectedElement?.id === col.id && selectedElement?._context === 'l2' && selectedElement?.type !== 'container-l2-panel')
                       ? 'text-indigo-800 dark:text-indigo-300 bg-indigo-100 dark:bg-indigo-950/40 shadow-[inset_0_-3px_0_0_#6366f1]'
                       : 'hover:bg-indigo-50/50 dark:hover:bg-slate-800/40 hover:ring-2 hover:ring-inset hover:ring-indigo-300 dark:hover:ring-indigo-500/50 rounded-md'
                   }`}
@@ -313,7 +350,7 @@ export const GridTable: React.FC<GridTableProps> = ({
                           {getAggLabel(col.footerAgg)}
                         </span>
                       )}
-                      {selectedElementId === col.id && (
+                      {(selectedElement?.id === col.id && selectedElement?._context === 'l2' && selectedElement?.type !== 'container-l2-panel') && (
                         <button
                           onClick={(e) => onDeleteColumn(e, col.id)}
                           className="p-1 bg-red-100 dark:bg-red-950/30 text-red-600 dark:text-red-400 rounded hover:bg-red-200 dark:hover:bg-red-900/40 transition-colors"
@@ -335,7 +372,7 @@ export const GridTable: React.FC<GridTableProps> = ({
             {columns.length === 0 ? (
               <tr>
                 <td
-                  colSpan={5}
+                  colSpan={((settings.showCheckbox || hasFooterRows) ? 1 : 0) + (showExtraCol ? 1 : 0) + columns.length + 1}
                   className="p-0 border-none"
                 >
                   <div className={`my-4 py-12 text-center text-sm rounded-lg pointer-events-none transition-all border-2 border-dashed flex flex-col items-center justify-center gap-2 ${
@@ -351,10 +388,15 @@ export const GridTable: React.FC<GridTableProps> = ({
             ) : (
               data.map((row) => (
                 <tr key={row.id} className="border-b border-gray-100 dark:border-slate-800/60 hover:bg-gray-50/80 dark:hover:bg-slate-800/10 transition group">
-                  {settings.showCheckbox && (
-                    <td className="py-2.5 px-3">
-                      <input type="checkbox" className="rounded border-gray-300 dark:border-slate-700 dark:bg-slate-800 text-indigo-500" />
+                  {(settings.showCheckbox || hasFooterRows) && (
+                    <td className="py-2.5 px-3 w-8 text-center select-none">
+                      {settings.showCheckbox ? (
+                        <input type="checkbox" className="rounded border-gray-300 dark:border-slate-700 dark:bg-slate-800 text-indigo-500" />
+                      ) : null}
                     </td>
+                  )}
+                  {showExtraCol && (
+                    <td className="py-2.5 px-3" />
                   )}
                   {columns.map((col, idx) => {
                     let cellValue: string;
@@ -383,78 +425,150 @@ export const GridTable: React.FC<GridTableProps> = ({
                 </tr>
               ))
             )}
+            {/* Spacer row to push footer to the bottom */}
+            <tr className="h-full bg-transparent border-none pointer-events-none select-none">
+              <td 
+                colSpan={((settings.showCheckbox || hasFooterRows) ? 1 : 0) + (showExtraCol ? 1 : 0) + columns.length + 1} 
+                className="p-0 bg-transparent border-none" 
+              />
+            </tr>
           </tbody>
 
           {/* ── TFOOT — multiple aggregation rows ── */}
           {footerRows && columns.length > 0 ? (
             <tfoot className="divide-y divide-gray-100 dark:divide-slate-800/40">
               {/* Spacer row to separate footer from table rows */}
-              {footerRows.length > 0 && (
-                <tr className="h-4 bg-transparent border-none select-none pointer-events-none">
-                  <td colSpan={(settings.showCheckbox ? 1 : 0) + columns.length + 1} className="h-4 p-0 bg-transparent border-none" />
-                </tr>
-              )}
-              {footerRows.map((row, rIdx) => {
-                const isSelected = selectedElementId === row.id;
+                         {footerRows.map((row, rIdx) => {
                 return (
                   <tr
                     key={row.id}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onSelect({
-                        id: row.id,
-                        type: 'grid-footer-row',
-                        title: row.title,
-                        operator: row.operator,
-                        selectedColumns: row.selectedColumns
-                      });
-                    }}
-                    className={`cursor-pointer transition-all font-bold group ${
-                      rIdx === 0 ? 'border-t-2 border-indigo-500/20 dark:border-indigo-500/40' : ''
+                    onDragOver={(e) => handleDragOverRow(e, row.id)}
+                    onDragLeave={() => setDragOverRowId(null)}
+                    onDrop={(e) => handleDropRow(e, row.id)}
+                    className={`transition-all font-bold group border-b border-gray-100 dark:border-slate-800/60 ${
+                      rIdx === 0 ? 'border-t-2 border-indigo-500 dark:border-indigo-400' : ''
                     } ${
-                      isSelected
-                        ? 'bg-indigo-50/50 dark:bg-indigo-950/30 text-indigo-900 dark:text-indigo-300'
-                        : 'bg-gray-50/50 dark:bg-slate-900/30 text-gray-700 dark:text-slate-200 hover:bg-gray-100/50 dark:hover:bg-slate-800/40'
+                      draggedRowId === row.id
+                        ? 'opacity-40 bg-gray-50 dark:bg-slate-900'
+                        : dragOverRowId === row.id
+                        ? 'bg-indigo-50/20 dark:bg-indigo-950/20 border-t-2 border-t-indigo-500 dark:border-t-indigo-400'
+                        : 'bg-slate-50/90 dark:bg-slate-950/40 text-gray-800 dark:text-slate-100 hover:bg-slate-100/90 dark:hover:bg-slate-900/60'
                     }`}
                   >
-                    {settings.showCheckbox && <td className="py-2 px-3" />}
-                    {columns.map((col, idx) => {
+                    {(settings.showCheckbox || hasFooterRows) && (
+                      <td className="py-2.5 px-3 w-8 text-center select-none">
+                        <div
+                          draggable
+                          onDragStart={(e) => handleDragStartRow(e, row.id)}
+                          onDragEnd={handleDragEndRow}
+                          className="cursor-grab active:cursor-grabbing text-gray-400 dark:text-slate-500 hover:text-indigo-650 dark:hover:text-indigo-400 p-0.5 inline-flex items-center justify-center transition-colors"
+                          title={language === 'fa' ? 'جابجایی سطر' : 'Drag to reorder'}
+                        >
+                          <GripVertical className="w-3.5 h-3.5" />
+                        </div>
+                      </td>
+                    )}
+                    {showExtraCol && (
+                      <td className="py-2.5 px-3 text-xs font-bold text-center w-44 min-w-[150px] relative">
+                        <div className="flex items-center gap-1.5 flex-wrap justify-start" onClick={(e) => e.stopPropagation()}>
+                          <input
+                            type="text"
+                            value={row.title || ''}
+                            onChange={(e) => {
+                              if (onUpdateFooterRows) {
+                                const next = footerRows.map(r => r.id === row.id ? { ...r, title: e.target.value } : r);
+                                onUpdateFooterRows(next);
+                              }
+                            }}
+                            placeholder={getAggLabel(row.operator)}
+                            className="w-20 text-xs bg-transparent border-b border-dashed border-gray-300 dark:border-slate-700 hover:border-indigo-500 dark:hover:border-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 focus:outline-none py-0.5 px-1 font-bold text-gray-700 dark:text-slate-200"
+                          />
+
+                          <select
+                            value={row.operator}
+                            onChange={(e) => {
+                              const val = e.target.value as AggType;
+                              const defaultTitlesFa: Record<string, string> = { sum: 'جمع', avg: 'میانگین', min: 'کمینه', max: 'بیشینه', count: 'تعداد' };
+                              const defaultTitlesEn: Record<string, string> = { sum: 'Sum', avg: 'Average', min: 'Min', max: 'Max', count: 'Count' };
+                              const nextTitle = language === 'fa' ? defaultTitlesFa[val] : defaultTitlesEn[val];
+                              
+                              if (onUpdateFooterRows) {
+                                const next = footerRows.map(r => r.id === row.id ? { ...r, operator: val, title: nextTitle } : r);
+                                onUpdateFooterRows(next);
+                              }
+                            }}
+                            className="text-[10px] bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded px-1.5 py-0.5 font-normal text-gray-500 dark:text-slate-400 outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer"
+                          >
+                            <option value="sum">{language === 'fa' ? 'جمع' : 'Sum'}</option>
+                            <option value="avg">{language === 'fa' ? 'میانگین' : 'Average'}</option>
+                            <option value="min">{language === 'fa' ? 'کمینه' : 'Min'}</option>
+                            <option value="max">{language === 'fa' ? 'بیشینه' : 'Max'}</option>
+                            <option value="count">{language === 'fa' ? 'تعداد' : 'Count'}</option>
+                          </select>
+                        </div>
+                      </td>
+                    )}
+                    {columns.map((col) => {
                       const isTarget = row.selectedColumns.includes(col.id);
                       const isNumeric = col.type === 'comp-number' || col.type === 'comp-formula';
-                      const canCalculate = isTarget && (row.operator === 'count' || isNumeric);
-                      const aggValue = canCalculate ? computeAggValue(col, data, columns, row.operator) : '';
 
                       return (
-                        <td key={col.id} className="py-2 px-3 text-xs font-bold">
-                          {idx === 0 ? (
-                            editingRowId === row.id ? (
-                              <input
-                                autoFocus
-                                value={editTitleDraft}
-                                onChange={(e) => setEditTitleDraft(e.target.value)}
-                                onBlur={() => handleSaveTitle(row.id)}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') handleSaveTitle(row.id);
-                                  if (e.key === 'Escape') setEditingRowId(null);
-                                }}
-                                className="bg-transparent border-b border-indigo-400 dark:border-indigo-500 outline-none w-full font-bold dark:text-slate-100"
-                                onClick={(e) => e.stopPropagation()}
-                              />
+                        <td key={col.id} className="py-2.5 px-3 text-xs font-bold text-start">
+                          {isNumeric ? (
+                            isTarget ? (
+                              <div className="flex justify-start" onClick={(e) => e.stopPropagation()}>
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/45 text-indigo-700 dark:text-indigo-400 border border-indigo-100/60 dark:border-indigo-900/30 font-normal">
+                                  <span>{col.name || col.label}</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const next = row.selectedColumns.filter((id: string) => id !== col.id);
+                                      if (onUpdateFooterRows) {
+                                        onUpdateFooterRows(footerRows.map(r => r.id === row.id ? { ...r, selectedColumns: next } : r));
+                                      }
+                                    }}
+                                    className="hover:text-red-500 text-gray-400 dark:text-slate-500 transition-colors p-0.5 cursor-pointer border-none bg-transparent"
+                                    title={language === 'fa' ? 'حذف ستون' : 'Remove Column'}
+                                  >
+                                    <X className="w-2.5 h-2.5" />
+                                  </button>
+                                </span>
+                              </div>
                             ) : (
-                              <span
-                                onDoubleClick={(e) => {
+                              <button
+                                type="button"
+                                onClick={(e) => {
                                   e.stopPropagation();
-                                  setEditingRowId(row.id);
-                                  setEditTitleDraft(row.title);
+                                  const next = [...(row.selectedColumns || []), col.id];
+                                  if (onUpdateFooterRows) {
+                                    onUpdateFooterRows(footerRows.map(r => r.id === row.id ? { ...r, selectedColumns: next } : r));
+                                  }
                                 }}
-                                className="cursor-text hover:underline text-gray-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400 font-bold"
-                                title={t('doubleClickToRename')}
+                                className="inline-flex items-center gap-1 text-[10px] text-indigo-650 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-semibold cursor-pointer border-none bg-transparent hover:bg-indigo-50/50 dark:hover:bg-slate-800/40 rounded px-1.5 py-1 transition-colors"
                               >
-                                {row.title || getAggLabel(row.operator)}
-                              </span>
+                                <Plus className="w-3 h-3" />
+                                <span>{language === 'fa' ? 'افزودن' : 'Add'}</span>
+                              </button>
                             )
-                          ) : aggValue ? (
-                            <span className="font-bold text-indigo-600 dark:text-indigo-400">{aggValue}</span>
+                          ) : isTarget ? (
+                            <div className="flex justify-start" onClick={(e) => e.stopPropagation()}>
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/45 text-indigo-700 dark:text-indigo-400 border border-indigo-100/60 dark:border-indigo-900/30 font-normal">
+                                <span>{col.name || col.label}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const next = row.selectedColumns.filter((id: string) => id !== col.id);
+                                    if (onUpdateFooterRows) {
+                                      onUpdateFooterRows(footerRows.map(r => r.id === row.id ? { ...r, selectedColumns: next } : r));
+                                    }
+                                  }}
+                                  className="hover:text-red-500 text-gray-400 dark:text-slate-500 transition-colors p-0.5 cursor-pointer border-none bg-transparent"
+                                  title={language === 'fa' ? 'حذف ستون' : 'Remove Column'}
+                                >
+                                  <X className="w-2.5 h-2.5" />
+                                </button>
+                              </span>
+                            </div>
                           ) : (
                             <span className="text-gray-300 dark:text-slate-700 font-bold">—</span>
                           )}
@@ -470,9 +584,7 @@ export const GridTable: React.FC<GridTableProps> = ({
                             onUpdateFooterRows(nextRows);
                           }
                         }}
-                        className={`p-1 text-gray-400 hover:text-red-500 rounded transition-all cursor-pointer group-hover:opacity-100 ${
-                          isSelected ? 'opacity-100' : 'opacity-0'
-                        }`}
+                        className="p-1 text-gray-400 hover:text-red-500 rounded transition-all cursor-pointer opacity-0 group-hover:opacity-100"
                         title={t('deleteRow')}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -482,36 +594,30 @@ export const GridTable: React.FC<GridTableProps> = ({
                 );
               })}
               {/* Button to add a new footer row */}
-              <tr className="bg-transparent border-none">
-                <td colSpan={(settings.showCheckbox ? 1 : 0) + columns.length + 1} className="py-2 px-3 text-start border-none">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (onUpdateFooterRows) {
-                        const newRow = {
-                          id: `footer_${Date.now()}`,
-                          title: language === 'fa' ? 'جمع' : 'Sum',
-                          operator: 'sum',
-                          selectedColumns: []
-                        };
-                        onUpdateFooterRows([...footerRows, newRow]);
-                        // Select it immediately so that settings panel opens for it
-                        onSelect({
-                          id: newRow.id,
-                          type: 'grid-footer-row',
-                          title: newRow.title,
-                          operator: newRow.operator,
-                          selectedColumns: newRow.selectedColumns
-                        });
-                      }
-                    }}
-                    className="flex items-center gap-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors py-1 px-2 hover:bg-indigo-50 dark:hover:bg-slate-800/50 rounded cursor-pointer"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    {language === 'fa' ? 'افزودن سطر محاسباتی' : 'Add Computational Row'}
-                  </button>
-                </td>
-              </tr>
+              {hasNumericColumn && (
+                <tr className="bg-transparent border-none">
+                  <td colSpan={((settings.showCheckbox || hasFooterRows) ? 1 : 0) + (showExtraCol ? 1 : 0) + columns.length + 1} className="py-2 px-3 text-start border-none">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (onUpdateFooterRows) {
+                          const newRow = {
+                            id: `footer_${Date.now()}`,
+                            title: language === 'fa' ? 'جمع' : 'Sum',
+                            operator: 'sum',
+                            selectedColumns: []
+                          };
+                          onUpdateFooterRows([...footerRows, newRow]);
+                        }
+                      }}
+                      className="flex items-center gap-1.5 text-xs font-semibold text-indigo-650 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-colors py-1 px-2 hover:bg-indigo-50 dark:hover:bg-slate-800/50 rounded cursor-pointer"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      {language === 'fa' ? 'افزودن سطر تجمیعی' : 'Add Summary Row'}
+                    </button>
+                  </td>
+                </tr>
+              )}
             </tfoot>
           ) : (
             /* Fallback to old footer if footerRows is not provided */
@@ -519,19 +625,22 @@ export const GridTable: React.FC<GridTableProps> = ({
               <tfoot className="">
                 {/* Spacer row to separate footer from table rows */}
                 <tr className="h-4 bg-transparent border-none select-none pointer-events-none">
-                  <td colSpan={(settings.showCheckbox ? 1 : 0) + columns.length + 1} className="h-4 p-0 bg-transparent border-none" />
+                  <td colSpan={((settings.showCheckbox || hasFooterRows) ? 1 : 0) + (showExtraCol ? 1 : 0) + columns.length + 1} className="h-4 p-0 bg-transparent border-none" />
                 </tr>
-                <tr className="font-bold border-t-2 border-indigo-500/20 dark:border-indigo-500/40 bg-gray-50/50 dark:bg-slate-900/30">
-                  {settings.showCheckbox && <td className="py-2 px-3" />}
-                  {columns.map((col, idx) => {
+                <tr className="font-bold border-t-2 border-indigo-500 dark:border-indigo-400 bg-slate-50/90 dark:bg-slate-950/40">
+                  {(settings.showCheckbox || hasFooterRows) && (
+                    <td className="py-2 px-3 text-xs font-bold text-center w-8" />
+                  )}
+                  {showExtraCol && (
+                    <td className="py-2 px-3 text-xs font-bold text-gray-700 dark:text-slate-200 text-start">
+                      {footerLabel || getAggLabel(columns[0]?.footerAgg ?? 'none') || ''}
+                    </td>
+                  )}
+                  {columns.map((col) => {
                     const aggValue = computeAgg(col, data, columns);
                     return (
-                      <td key={col.id} className="py-2 px-3 text-xs font-bold">
-                        {idx === 0 ? (
-                          <span className="text-gray-700 dark:text-slate-200 font-bold">
-                            {footerLabel || getAggLabel(col.footerAgg ?? 'none') || ''}
-                          </span>
-                        ) : aggValue ? (
+                      <td key={col.id} className="py-2 px-3 text-xs font-bold text-start">
+                        {aggValue ? (
                           <span className="text-indigo-600 dark:text-indigo-400 font-bold">{aggValue}</span>
                         ) : null}
                       </td>

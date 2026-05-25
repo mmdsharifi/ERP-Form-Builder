@@ -23,6 +23,7 @@ export default function App() {
         onReset={() => {
           formState.setMainGroups([{ id: 'g_base', name: formState.t('baseInfo'), columns: 5, fields: [] }]);
           formState.setBoundMainEntity('');
+          formState.setMainPanelColumns(5);
           formState.setMainPanelName(formState.language === 'fa' ? 'اطلاعات اصلی' : 'Main Panel');
           formState.setLevel2Tabs([
             {
@@ -36,18 +37,6 @@ export default function App() {
             }
           ]);
           formState.setActiveL2TabId('l2_tab_1');
-          formState.setLevel3Tabs([
-            {
-              id: 'tab_1',
-              title: formState.language === 'fa' ? 'اطلاعات' : 'Info',
-              boundEntity: '',
-              viewType: 'form',
-              gridColumns: [],
-              groups: [{ id: 'l3g_base_1', name: formState.t('baseInfo'), columns: 2, fields: [] }],
-              gridSettings: { showAdd: true, showSearch: true, showCheckbox: true }
-            }
-          ]);
-          formState.setActiveTabId('tab_1');
           formState.setViewStack([{ id: 'root', type: 'main', title: formState.language === 'fa' ? 'اطلاعات اصلی' : 'Main Panel' }]);
           formState.setSelectedElement(null);
         }}
@@ -57,9 +46,6 @@ export default function App() {
         <Sidebar 
           onDragStart={formState.handleDragStartSidebar} 
           t={formState.t} 
-          entities={formState.entities}
-          setSelectedElement={formState.setSelectedElement}
-          language={formState.language}
         />
         
         <main className="flex-1 relative overflow-hidden flex flex-col p-6">
@@ -81,6 +67,9 @@ export default function App() {
                 handleBindEntity={formState.handleBindEntity}
                 draggedType={formState.draggedType}
                 setDraggedType={formState.setDraggedType}
+                mainPanelColumns={formState.mainPanelColumns}
+                onUpdateFieldProp={formState.updateElementProp}
+                language={formState.language}
               />
               
               <DetailPanel 
@@ -88,21 +77,12 @@ export default function App() {
                 viewStack={formState.viewStack}
                 isRoot={formState.isRoot}
                 level2Tabs={formState.level2Tabs}
-                level3Tabs={formState.level3Tabs}
                 activeL2TabId={formState.activeL2TabId}
-                activeTabId={formState.activeTabId}
-                editingTabId={formState.editingTabId}
                 selectedElement={formState.selectedElement}
                 setSelectedElement={formState.setSelectedElement}
                 setLevel2Tabs={formState.setLevel2Tabs}
-                setLevel3Tabs={formState.setLevel3Tabs}
                 setActiveL2TabId={formState.setActiveL2TabId}
-                setActiveTabId={formState.setActiveTabId}
-                setEditingTabId={formState.setEditingTabId}
                 updateActiveL2Tab={formState.updateActiveL2Tab}
-                updateActiveTab={formState.updateActiveTab}
-                handleBack={formState.handleBack}
-                handleDrillDown={formState.handleDrillDown}
                 handleDrop={formState.handleDrop}
                 handleDragOver={formState.handleDragOver}
                 language={formState.language}
@@ -120,7 +100,6 @@ export default function App() {
           updateElementProp={formState.updateElementProp}
           boundMainEntity={formState.boundMainEntity}
           level2Tabs={formState.level2Tabs}
-          level3Tabs={formState.level3Tabs}
           mainGroups={formState.mainGroups}
           setMainPanelName={formState.setMainPanelName}
           setSelectedElement={formState.setSelectedElement}
@@ -129,6 +108,7 @@ export default function App() {
           t={formState.t}
           entities={formState.entities}
           addEntity={formState.addEntity}
+          mainPanelColumns={formState.mainPanelColumns}
         />
       </div>
     </div>
