@@ -20,6 +20,7 @@ interface EntityCreatorSettingsProps {
   addEntity: (systemName: string, name: string, fields: any[], status?: string) => void;
   language: 'fa' | 'en';
   t: (key: string) => string;
+  autoBindCreatedEntity?: (backElement: any, entityKey: string, fields: any[]) => void;
 }
 
 export const EntityCreatorSettings: React.FC<EntityCreatorSettingsProps> = ({
@@ -28,7 +29,8 @@ export const EntityCreatorSettings: React.FC<EntityCreatorSettingsProps> = ({
   entities,
   addEntity,
   language,
-  t
+  t,
+  autoBindCreatedEntity
 }) => {
   const isEditing = selectedElement.id !== 'new_entity_creator';
   const initialSystemName = selectedElement.systemName || '';
@@ -117,8 +119,32 @@ export const EntityCreatorSettings: React.FC<EntityCreatorSettingsProps> = ({
     // Save entity with current entity status
     addEntity(systemName, displayName, fields, entityStatus);
 
-    // Go back to the calling tab panel
-    setSelectedElement(selectedElement._backElement || null);
+    const backEl = selectedElement._backElement;
+
+    // Auto-bind if creating a new entity and a backElement is present
+    if (!isEditing && backEl && autoBindCreatedEntity) {
+      autoBindCreatedEntity(backEl, systemName, fields);
+    }
+
+    // Go back to the calling panel with updated bind references
+    if (backEl) {
+      let nextBackEl = { ...backEl };
+      if (nextBackEl.type === 'container-main') {
+        nextBackEl.boundEntity = systemName;
+      } else if (nextBackEl.type === 'container-l2-panel') {
+        nextBackEl.boundEntity = systemName;
+        nextBackEl.gridColumns = fields;
+        nextBackEl.groups = [{ 
+          id: `l3g_base_${Date.now()}`, 
+          name: 'اطلاعات پایه', 
+          columns: 2, 
+          fields 
+        }];
+      }
+      setSelectedElement(nextBackEl);
+    } else {
+      setSelectedElement(null);
+    }
   };
 
   const getFieldTypeLabel = (type: string): string => {

@@ -21,6 +21,7 @@ interface SettingsPanelProps {
   entities: Record<string, { name: string; fields: any[] }>;
   addEntity: (systemName: string, name: string, fields: any[]) => void;
   mainPanelColumns: number;
+  autoBindCreatedEntity?: (backElement: any, entityKey: string, fields: any[]) => void;
 }
 
 export const SettingsPanel: React.FC<SettingsPanelProps> = ({
@@ -36,7 +37,8 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
   t,
   entities,
   addEntity,
-  mainPanelColumns
+  mainPanelColumns,
+  autoBindCreatedEntity
 }) => {
   return (
     <aside className="w-72 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-r border-white/40 dark:border-slate-800 shadow-[-4px_0_15px_-3px_rgba(0,0,0,0.05)] flex flex-col z-10">
@@ -102,6 +104,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                   addEntity={addEntity}
                   language={language}
                   t={t}
+                  autoBindCreatedEntity={autoBindCreatedEntity}
                 />
               ) : selectedElement.type?.includes('group') ? (
                 <>

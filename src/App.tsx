@@ -109,6 +109,7 @@ export default function App() {
           entities={formState.entities}
           addEntity={formState.addEntity}
           mainPanelColumns={formState.mainPanelColumns}
+          autoBindCreatedEntity={formState.autoBindCreatedEntity}
         />
       </div>
     </div>

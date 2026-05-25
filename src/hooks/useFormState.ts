@@ -266,6 +266,35 @@ export function useFormState() {
     }
   };
 
+  const autoBindCreatedEntity = (backElement: any, entityKey: string, fields: any[]) => {
+    if (!backElement) return;
+
+    if (backElement.type === 'container-main') {
+      setBoundMainEntity(entityKey);
+      setMainGroups([
+        { id: 'g_base', name: 'اطلاعات پایه', columns: 5, fields }
+      ]);
+    } else if (backElement.type === 'container-l2-panel') {
+      const tabId = backElement.id || backElement._tabId;
+      setLevel2Tabs(tabs => tabs.map(t => {
+        if (t.id === tabId) {
+          return {
+            ...t,
+            boundEntity: entityKey,
+            gridColumns: fields,
+            groups: [{ 
+              id: `l3g_base_${Date.now()}`, 
+              name: 'اطلاعات پایه', 
+              columns: 2, 
+              fields 
+            }]
+          };
+        }
+        return t;
+      }));
+    }
+  };
+
   const [draggedType, setDraggedType] = React.useState<'field' | 'column' | null>(null);
 
   React.useEffect(() => {
@@ -617,7 +646,8 @@ export function useFormState() {
     draggedType,
     setDraggedType,
     mainPanelColumns,
-    setMainPanelColumns
+    setMainPanelColumns,
+    autoBindCreatedEntity
   };
 }
 
