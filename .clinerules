@@ -1,0 +1,13 @@
+# AI Assistant Workspace Rules
+
+Always adhere to the guidelines and specifications detailed in the following project files. You MUST read them at the start of the session to understand the codebase and requirements:
+
+1. **AGENT.md** ([AGENT.md](file:///Users/user/Documents/Projects/Code/ERP-Form-Builder/AGENT.md)): Map of the codebase, technological stack, state management patterns, and permanent project requirements/design constraints.
+2. **DESIGN.md** ([DESIGN.md](file:///Users/user/Documents/Projects/Code/ERP-Form-Builder/DESIGN.md)): Styling tokens, layout constraints, Tailwind CSS v4 conventions, and themes.
+3. **STRUCTURE.md** ([STRUCTURE.md](file:///Users/user/Documents/Projects/Code/ERP-Form-Builder/STRUCTURE.md)): State architecture, data models, and component hierarchies.
+
+## Core Rules:
+- **Always read these files first** before proposing or making changes.
+- **Do not introduce ad-hoc styles**; use existing Tailwind utility patterns listed in `DESIGN.md`.
+- **Run validation** using `npm run validate` after making changes to ensure zero regressions.
+- **Never delete or break the validation script** (`validate_rules.mjs`) as it enforces critical business logic.
