@@ -193,7 +193,7 @@ export const FormPanel: React.FC<FormPanelProps> = ({
     let lastColSpan = currentColSpan;
     
     const handleMouseMove = (moveEvent: MouseEvent) => {
-      const deltaX = startX - moveEvent.clientX;
+      const deltaX = language === 'fa' ? startX - moveEvent.clientX : moveEvent.clientX - startX;
       const colsDiff = Math.round(deltaX / colWidth);
       let newColSpan = currentColSpan + colsDiff;
       newColSpan = Math.max(1, Math.min(maxColumns, newColSpan));
@@ -242,7 +242,7 @@ export const FormPanel: React.FC<FormPanelProps> = ({
     let lastColSpan = currentColSpan;
     
     const handleTouchMove = (moveEvent: TouchEvent) => {
-      const deltaX = startX - moveEvent.touches[0].clientX;
+      const deltaX = language === 'fa' ? startX - moveEvent.touches[0].clientX : moveEvent.touches[0].clientX - startX;
       const colsDiff = Math.round(deltaX / colWidth);
       let newColSpan = currentColSpan + colsDiff;
       newColSpan = Math.max(1, Math.min(maxColumns, newColSpan));
@@ -543,12 +543,12 @@ export const FormPanel: React.FC<FormPanelProps> = ({
                           />
                         )}
 
-                        {/* Trailing edge (left edge in RTL) resize handle */}
+                        {/* Trailing edge (left edge in RTL / right edge in LTR) resize handle */}
                         {(selectedElement?.id === field.id && selectedElement?._context === targetZone) && (
                           <div
                             onMouseDown={(e) => handleMouseDown(e, field.id, field.colSpan || 1, formColumns ?? group.columns ?? 5)}
                             onTouchStart={(e) => handleTouchStart(e, field.id, field.colSpan || 1, formColumns ?? group.columns ?? 5)}
-                            className="absolute left-[-6px] top-0 bottom-0 w-3 cursor-col-resize flex items-center justify-center z-30 group/handle select-none"
+                            className={`absolute top-0 bottom-0 w-3 cursor-col-resize flex items-center justify-center z-30 group/handle select-none ${language === 'fa' ? 'left-[-6px]' : 'right-[-6px]'}`}
                             onClick={(e) => e.stopPropagation()}
                           >
                             <div className="w-1.5 h-10 bg-indigo-300 dark:bg-slate-700 rounded-full group-hover/handle:bg-indigo-500 group-hover/handle:h-14 group-active/handle:bg-indigo-600 group-active/handle:h-18 transition-all shadow-[0_0_8px_rgba(99,102,241,0.2)] dark:shadow-[0_0_8px_rgba(99,102,241,0.4)]" />
