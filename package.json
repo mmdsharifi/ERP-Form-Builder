@@ -12,7 +12,8 @@
     "validate": "node validate_rules.mjs",
     "validate:watch": "node watch.mjs",
     "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui"
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:codegen": "playwright codegen http://localhost:4000"
   },
   "dependencies": {
     "@google/genai": "^1.29.0",
