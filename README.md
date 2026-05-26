@@ -5,6 +5,8 @@
 
 A state-of-the-art drag-and-drop form designer tailored for complex enterprise ERP environments. Built with native RTL (Right-to-Left) Persian layout support, premium micro-animations (Motion), a sleek glassmorphism aesthetic, and automated E2E test coverage.
 
+![ERP Form Builder — App Preview](docs/images/app-preview.png)
+
 ---
 
 ## 📖 Table of Contents
