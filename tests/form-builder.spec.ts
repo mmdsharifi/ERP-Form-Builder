@@ -117,4 +117,86 @@ test.describe('ERP Form Builder E2E Tests', () => {
     // 3. Verify that the Main Panel header title has updated
     await expect(page.locator('h3:has-text("سند فروشگاهی جدید")')).toBeVisible();
   });
+
+  test('should support creating, renaming, and deleting Level 2 tabs', async ({ page }) => {
+    // 1. Locate the L2 tab add button (+) next to the single tab
+    const addTabBtn = page.locator('button:has(svg.lucide-plus).ml-2');
+    await expect(addTabBtn).toBeVisible();
+    await addTabBtn.click();
+
+    // 2. Verify new tab is created with default title "تب جدید"
+    const newTab = page.locator('div[class*="group/tab"]:has-text("تب جدید")').first();
+    await expect(newTab).toBeVisible();
+
+    // 3. Double-click the new tab to rename it
+    await page.locator('text="تب جدید"').first().dblclick();
+
+    // 4. Fill the input field inside the editing tab
+    const renameInput = page.locator('div[class*="group/tab"] input');
+    await renameInput.fill('تب جزئیات اضافی');
+    await renameInput.press('Enter');
+
+    // 5. Verify the tab title is successfully updated
+    await expect(page.locator('text="تب جزئیات اضافی"')).toBeVisible();
+
+    // 6. Delete the tab by hovering and clicking the trash button
+    const tabContainer = page.locator('div[class*="group/tab"]:has-text("تب جزئیات اضافی")');
+    await tabContainer.hover();
+    
+    const deleteBtn = tabContainer.locator('button:has(svg.lucide-trash-2)');
+    await deleteBtn.click();
+
+    // 7. Verify the tab is deleted
+    await expect(page.locator('text="تب جزئیات اضافی"')).not.toBeVisible();
+  });
+
+  test('should support adding summary rows and setting target columns in tab settings', async ({ page }) => {
+    // 1. Bind Main Panel to 'sales_stages'
+    const mainSelect = page.locator('select').first();
+    await mainSelect.selectOption('sales_stages');
+    await page.waitForTimeout(1000);
+
+    // 2. Select Level 2 Tab "اقلام" and bind it to 'sales_stages' too
+    const l2Tab = page.locator('text="اقلام"');
+    await l2Tab.click();
+    
+    const tabSelect = page.locator('select').nth(1);
+    await tabSelect.selectOption('sales_stages');
+    await page.waitForTimeout(1000);
+
+    // 3. Click the tab header again to show its settings in the SettingsPanel
+    await page.locator('text="اقلام"').first().click();
+
+    // 4. In the SettingsPanel, click the "+" button under "سطرهای تجمیعی" (Summary Rows)
+    const addSummaryRowBtn = page.locator('aside button[title="جدید"]');
+    await expect(addSummaryRowBtn).toBeVisible();
+    await addSummaryRowBtn.click();
+
+    // 5. The Portal popover should open. Enter title "جمع کل"
+    const popoverTitleInput = page.locator('div:has(> label:has-text("عنوان سطر")) >> input');
+    await expect(popoverTitleInput).toBeVisible();
+    await popoverTitleInput.fill('جمع کل');
+
+    // 6. Open the "ستون‌های هدف" (Target Columns) multi-select dropdown
+    const multiSelect = page.locator('text="هیچ ستونی انتخاب نشده"');
+    await multiSelect.click();
+
+    // 7. Click on the checkbox/option for "احتمال موفقیت" in the dropdown list
+    const checkboxOption = page.locator('label:has(span:has-text("احتمال موفقیت")) >> input[type="checkbox"]');
+    await checkboxOption.click({ force: true });
+
+    // Close the dropdown to make the Save button fully accessible
+    await page.locator('button:has(span:has-text("احتمال موفقیت"))').click();
+
+    // 8. Click Save in the popover
+    const saveBtn = page.locator('button:has-text("ذخیره")').last();
+    await saveBtn.click({ force: true });
+
+    // 9. Verify that the footer row "جمع کل" is rendered inside the table footer tfoot as an input value
+    const footerTitleInput = page.locator('tfoot input').first();
+    await expect(footerTitleInput).toHaveValue('جمع کل');
+
+    // 10. Verify that the column is aggregated and displays its name
+    await expect(page.locator('tfoot >> text="احتمال موفقیت"')).toBeVisible();
+  });
 });
