@@ -9,7 +9,8 @@
     "start": "node dist/server.cjs",
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
-    "validate": "node validate_rules.mjs"
+    "validate": "node validate_rules.mjs",
+    "validate:watch": "node watch.mjs"
   },
   "dependencies": {
     "@google/genai": "^1.29.0",
