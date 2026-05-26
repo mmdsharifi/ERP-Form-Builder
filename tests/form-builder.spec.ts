@@ -120,7 +120,7 @@ test.describe('ERP Form Builder E2E Tests', () => {
 
   test('should support creating, renaming, and deleting Level 2 tabs', async ({ page }) => {
     // 1. Locate the L2 tab add button (+) next to the single tab
-    const addTabBtn = page.locator('button:has(svg.lucide-plus).ml-2');
+    const addTabBtn = page.locator('button:has(svg.lucide-plus).ms-2, button:has(svg.lucide-plus).ml-2');
     await expect(addTabBtn).toBeVisible();
     await addTabBtn.click();
 

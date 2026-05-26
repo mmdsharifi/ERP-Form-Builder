@@ -26,7 +26,7 @@ export const TabPanelSettings: React.FC<TabPanelSettingsProps> = ({
   entities,
 }) => {
   const [editingFooterRow, setEditingFooterRow] = useState<any | null>(null);
-  const [popoverPosition, setPopoverPosition] = useState<{ top: number; height: number; right: number } | null>(null);
+  const [popoverPosition, setPopoverPosition] = useState<{ top: number; height: number; left: number; right: number } | null>(null);
   const [dragOverRowId, setDragOverRowId] = useState<string | null>(null);
 
   const handleReorderFooterRows = (draggedId: string, targetId: string) => {
@@ -44,15 +44,16 @@ export const TabPanelSettings: React.FC<TabPanelSettingsProps> = ({
 
   const getSelectedColumnsText = (selectedIds: string[]) => {
     if (!selectedIds || selectedIds.length === 0) {
-      return language === 'fa' ? 'بدون ستون هدف' : 'No target columns';
+      return t('noTargetColumns');
     }
     const names = selectedIds
       .map(id => gridCols.find((c: any) => c.id === id))
       .filter(Boolean)
-      .map((c: any) => c.name || c.label);
+      .map((c: any) => t(c.id) || c.name || c.label);
 
+    const separator = language === 'fa' ? '، ' : ', ';
     if (names.length <= 2) {
-      return names.join('، ');
+      return names.join(separator);
     }
     const extraCount = names.length - 2;
     return language === 'fa'
@@ -74,7 +75,7 @@ export const TabPanelSettings: React.FC<TabPanelSettingsProps> = ({
       {/* Group 1: Connected Entity */}
       <div className="space-y-3">
         {renderGroupHeader(
-          language === 'fa' ? 'موجودیت متصل' : 'Connected Entity',
+          t('connectedEntity'),
           <button
             type="button"
             onClick={() => setSelectedElement({
@@ -86,7 +87,7 @@ export const TabPanelSettings: React.FC<TabPanelSettingsProps> = ({
               _backElement: selectedElement
             })}
             className="p-1 rounded-md text-gray-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-gray-100 dark:hover:bg-slate-800/60 transition-all cursor-pointer"
-            title={language === 'fa' ? 'تعریف موجودیت جدید' : 'New Entity'}
+            title={t('addEntity')}
           >
             <Plus className="w-4 h-4" />
           </button>
@@ -95,17 +96,17 @@ export const TabPanelSettings: React.FC<TabPanelSettingsProps> = ({
         <div className="flex items-end gap-1.5 w-full">
           <div className="flex-1 min-w-0">
             <PropertyField 
-              label={language === 'fa' ? 'اتصال موجودیت' : 'Connected Entity'} 
-              info="اتصال این تب به یک جدول یا رفرنس در دیتابیس." 
+              label={t('bindEntity')} 
+              info={t('bindEntityInfo')} 
               type="select" 
               value={selectedElement.boundEntity || ''} 
               options={['', ...Object.keys(entities)]} 
-              optionsLabels={[language === 'fa' ? '-- قطع اتصال --' : '-- Disconnect --', ...Object.keys(entities).map(k => entities[k].name)]} 
+              optionsLabels={[t('disconnect'), ...Object.keys(entities).map(k => t(k) || entities[k].name)]} 
               onChange={(val) => {
                 const fields = (entities as any)[val]?.fields || [];
                 updateElementProp('boundEntity', val);
                 updateElementProp('gridColumns', fields);
-                updateElementProp('groups', [{ id: `l3g_base_${Date.now()}`, name: language === 'fa' ? 'اطلاعات پایه' : 'Base Info', columns: 2, fields: fields }]);
+                updateElementProp('groups', [{ id: `l3g_base_${Date.now()}`, name: 'اطلاعات پایه', columns: 2, fields: fields }]);
               }} 
             />
           </div>
@@ -129,7 +130,7 @@ export const TabPanelSettings: React.FC<TabPanelSettingsProps> = ({
                 }
               }}
               className="flex-shrink-0 h-[30px] w-[30px] bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-750 text-gray-650 dark:text-slate-300 border border-gray-200 dark:border-slate-700 rounded hover:shadow-xs transition-all cursor-pointer flex items-center justify-center shadow-sm"
-              title={language === 'fa' ? 'ویرایش موجودیت' : 'Edit Entity'}
+              title={t('editEntity')}
             >
               <Edit className="w-3.5 h-3.5" />
             </button>
@@ -140,28 +141,28 @@ export const TabPanelSettings: React.FC<TabPanelSettingsProps> = ({
       {/* Group 2: Panel & Table Settings */}
       <div className="pt-4 border-t border-gray-200 dark:border-slate-800/60 space-y-3">
         {renderGroupHeader(
-          language === 'fa' ? 'تنظیمات پنل' : 'Panel Settings'
+          t('panelSettings')
         )}
 
         <PropertyField 
-          label={language === 'fa' ? 'عنوان تب/پنل' : 'Tab/Panel Title'} 
+          label={t('tabPanelTitle')} 
           type="text" 
           value={selectedElement.label || selectedElement.title || ''} 
           onChange={(val) => { 
             updateElementProp('title', val); 
             updateElementProp('label', val); 
           }} 
-          info="نامی که روی تب مورد نظر نمایش داده خواهد شد." 
+          info={t('tabPanelTitleInfo')} 
         />
 
         {selectedElement._context !== 'l2' && (
           <div className="mb-3">
             <PropertyField
-              label={language === 'fa' ? 'نوع نمایش' : 'View Type'}
+              label={t('viewType')}
               type="select"
               value={selectedElement.viewType || 'grid'}
               options={['grid', 'form']}
-              optionsLabels={language === 'fa' ? ['جدول (Grid)', 'فرم (Form)'] : ['Grid (Table)', 'Form']}
+              optionsLabels={[t('viewTypeGrid'), t('viewTypeForm')]}
               onChange={(val) => updateElementProp('viewType', val)}
             />
           </div>
@@ -170,22 +171,22 @@ export const TabPanelSettings: React.FC<TabPanelSettingsProps> = ({
         {(selectedElement.viewType === 'grid' || selectedElement._context === 'l2') && (
           <div className="space-y-0.5 pt-1">
             <ToggleSwitch 
-              label="افزودن" 
+              label={t('gridAllowAdd')} 
               checked={!!selectedElement.gridSettings?.showAdd} 
               onChange={(val) => updateElementProp('gridSettings', {...selectedElement.gridSettings, showAdd: val})} 
-              info="نمایش دکمه ایجاد رکوردهای جدید در جدول." 
+              info={t('allowAddInfo')} 
             />
             <ToggleSwitch 
-              label="جستجو" 
+              label={t('gridAllowSearch')} 
               checked={!!selectedElement.gridSettings?.showSearch} 
               onChange={(val) => updateElementProp('gridSettings', {...selectedElement.gridSettings, showSearch: val})} 
-              info="نمایش کادر جستجو برای فیلتر کردن رکوردهای جدول." 
+              info={t('allowSearchInfo')} 
             />
             <ToggleSwitch 
-              label="انتخاب" 
+              label={t('gridAllowSelect')} 
               checked={!!selectedElement.gridSettings?.showCheckbox} 
               onChange={(val) => updateElementProp('gridSettings', {...selectedElement.gridSettings, showCheckbox: val})} 
-              info="امکان انتخاب تکی یا دسته‌جمعی ردیف‌های جدول." 
+              info={t('allowSelectInfo')} 
             />
           </div>
         )}
@@ -195,7 +196,7 @@ export const TabPanelSettings: React.FC<TabPanelSettingsProps> = ({
       {(selectedElement.viewType === 'grid' || selectedElement._context === 'l2') && (
         <div className="pt-4 border-t border-gray-200 dark:border-slate-800/60 space-y-3">
           {renderGroupHeader(
-            language === 'fa' ? 'سطرهای تجمیعی' : 'Summary Rows',
+            t('summaryRowSettings'),
             <button
               type="button"
               onClick={(e) => {
@@ -203,18 +204,19 @@ export const TabPanelSettings: React.FC<TabPanelSettingsProps> = ({
                 setPopoverPosition({
                   top: rect.top,
                   height: rect.height,
+                  left: rect.left,
                   right: rect.right
                 });
                 setEditingFooterRow({
                   id: `footer_${Date.now()}`,
-                  title: language === 'fa' ? 'جمع' : 'Sum',
+                  title: t('sum'),
                   operator: 'sum',
                   selectedColumns: [],
                   isNew: true
                 });
               }}
               className="p-1 rounded-md text-gray-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-gray-100 dark:hover:bg-slate-800/60 transition-all cursor-pointer"
-              title={language === 'fa' ? 'جدید' : 'New'}
+              title={t('new')}
             >
               <Plus className="w-4 h-4" />
             </button>
@@ -255,6 +257,7 @@ export const TabPanelSettings: React.FC<TabPanelSettingsProps> = ({
                     setPopoverPosition({
                       top: rect.top,
                       height: rect.height,
+                      left: rect.left,
                       right: rect.right
                     });
                     setEditingFooterRow({ ...row, isNew: false });
@@ -292,7 +295,7 @@ export const TabPanelSettings: React.FC<TabPanelSettingsProps> = ({
                       if (editingFooterRow?.id === row.id) setEditingFooterRow(null);
                     }}
                     className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 rounded p-1 cursor-pointer transition-opacity duration-150"
-                    title={language === 'fa' ? 'حذف سطر' : 'Delete Row'}
+                    title={t('delete')}
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -301,7 +304,7 @@ export const TabPanelSettings: React.FC<TabPanelSettingsProps> = ({
             })}
             {(selectedElement.footerRows || []).length === 0 && (
               <div className="text-center py-2 text-xs text-gray-400 dark:text-slate-500">
-                {language === 'fa' ? 'سطر تجمیعی تعریف نشده است' : 'No summary rows defined'}
+                {t('noSummaryRows')}
               </div>
             )}
           </div>
@@ -345,29 +348,38 @@ export const TabPanelSettings: React.FC<TabPanelSettingsProps> = ({
                       }}
                     />
                     <motion.div
-                      initial={{ opacity: 0, scale: 0.95, x: 10 }}
+                      initial={{ opacity: 0, scale: 0.95, x: language === 'fa' ? -10 : 10 }}
                       animate={{ opacity: 1, scale: 1, x: 0 }}
-                      exit={{ opacity: 0, scale: 0.95, x: 10 }}
+                      exit={{ opacity: 0, scale: 0.95, x: language === 'fa' ? -10 : 10 }}
                       transition={{ duration: 0.15, ease: 'easeOut' }}
                       style={{ 
                         top: `${top}px`, 
-                        left: `${popoverPosition.right + 12}px`,
+                        left: language === 'fa'
+                          ? `${popoverPosition.right + 12}px`
+                          : `${popoverPosition.left - 280 - 12}px`,
                         width: '280px'
                       }}
                       className="absolute z-[10000] bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl shadow-xl p-4 space-y-3.5 text-start pointer-events-auto"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      {/* Left pointing arrow rotated 45 degrees */}
-                      <div 
-                        style={{ top: `${arrowTop}px` }} 
-                        className="absolute left-[-6px] w-3 h-3 bg-white dark:bg-slate-900 border-t border-l border-gray-200 dark:border-slate-800 rotate-45 -translate-y-1/2" 
-                      />
+                      {/* Conditional Arrow orientation and placement */}
+                      {language === 'fa' ? (
+                        <div 
+                          style={{ top: `${arrowTop}px` }} 
+                          className="absolute left-[-6px] w-3 h-3 bg-white dark:bg-slate-900 border-t border-l border-gray-200 dark:border-slate-800 rotate-45 -translate-y-1/2" 
+                        />
+                      ) : (
+                        <div 
+                          style={{ top: `${arrowTop}px` }} 
+                          className="absolute right-[-6px] w-3 h-3 bg-white dark:bg-slate-900 border-r border-b border-gray-200 dark:border-slate-800 rotate-45 -translate-y-1/2" 
+                        />
+                      )}
 
                       <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-slate-800/60">
-                        <span className="text-xs font-bold text-gray-805 dark:text-slate-200">
+                        <span className="text-xs font-bold text-gray-850 dark:text-slate-200">
                           {editingFooterRow.isNew
-                            ? (language === 'fa' ? 'سطر تجمیعی جدید' : 'New Summary Row')
-                            : (language === 'fa' ? 'ویرایش سطر تجمیعی' : 'Edit Summary Row')}
+                            ? t('newSummaryRow')
+                            : t('editSummaryRow')}
                         </span>
                         <button 
                           type="button" 
@@ -383,7 +395,7 @@ export const TabPanelSettings: React.FC<TabPanelSettingsProps> = ({
 
                       <div className="space-y-3">
                         <PropertyField
-                          label={language === 'fa' ? 'عنوان سطر' : 'Row Title'}
+                          label={t('rowTitle')}
                           type="text"
                           value={editingFooterRow.title || ''}
                           onChange={(val) => {
@@ -392,26 +404,19 @@ export const TabPanelSettings: React.FC<TabPanelSettingsProps> = ({
                         />
 
                         <PropertyField
-                          label={language === 'fa' ? 'نوع محاسبات' : 'Calculation'}
+                          label={t('calculation')}
                           type="select"
                           value={editingFooterRow.operator || 'sum'}
                           options={['sum', 'avg', 'min', 'max', 'count']}
-                          optionsLabels={
-                            language === 'fa'
-                              ? ['جمع (Sum)', 'میانگین (Average)', 'کمینه (Min)', 'بیشینه (Max)', 'تعداد (Count)']
-                              : ['Sum', 'Average', 'Min', 'Max', 'Count']
-                          }
+                          optionsLabels={['sum', 'avg', 'min', 'max', 'count'].map(op => t(op))}
                           onChange={(val) => {
-                            const defaultTitlesFa: Record<string, string> = { sum: 'جمع', avg: 'میانگین', min: 'کمینه', max: 'بیشینه', count: 'تعداد' };
-                            const defaultTitlesEn: Record<string, string> = { sum: 'Sum', avg: 'Average', min: 'Min', max: 'Max', count: 'Count' };
-                            const nextTitle = language === 'fa' ? defaultTitlesFa[val] : defaultTitlesEn[val];
-
+                            const nextTitle = t(val);
                             setEditingFooterRow({ ...editingFooterRow, operator: val, title: nextTitle });
                           }}
                         />
 
                         <MultiSelectDropdown
-                          label={language === 'fa' ? 'ستون‌های هدف' : 'Target Columns'}
+                          label={t('targetColumns')}
                           columns={filteredColumns}
                           selectedValues={editingFooterRow.selectedColumns || []}
                           onChange={(val) => {
@@ -439,7 +444,7 @@ export const TabPanelSettings: React.FC<TabPanelSettingsProps> = ({
                           className="flex-1 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold shadow-xs transition-all cursor-pointer flex items-center justify-center gap-1.5"
                         >
                           <Save className="w-3.5 h-3.5" />
-                          <span>{language === 'fa' ? 'ذخیره' : 'Save'}</span>
+                          <span>{t('save')}</span>
                         </button>
                         <button
                           type="button"
@@ -449,7 +454,7 @@ export const TabPanelSettings: React.FC<TabPanelSettingsProps> = ({
                           }}
                           className="flex-1 py-1.5 bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-750 rounded-xl text-xs font-semibold transition-all cursor-pointer"
                         >
-                          {language === 'fa' ? 'انصراف' : 'Cancel'}
+                          {t('cancel')}
                         </button>
                       </div>
                     </motion.div>

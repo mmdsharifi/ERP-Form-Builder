@@ -98,7 +98,7 @@ export const Header: React.FC<HeaderProps> = ({ language, setLanguage, onReset, 
         <span className="text-gray-500 dark:text-slate-400 flex items-center gap-1">
           {t('company1')} <ChevronDown className="w-3.5 h-3.5" />
         </span>
-        <span className="bg-teal-50 dark:bg-teal-950/30 text-teal-700 dark:text-teal-400 border border-teal-100 dark:border-teal-900/50 px-2.5 py-1 rounded-full text-xs mr-2 font-bold">
+        <span className="bg-teal-50 dark:bg-teal-950/30 text-teal-700 dark:text-teal-400 border border-teal-100 dark:border-teal-900/50 px-2.5 py-1 rounded-full text-xs me-2 font-bold">
           {t('draftStatus')}
         </span>
       </div>

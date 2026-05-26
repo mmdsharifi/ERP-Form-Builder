@@ -33,7 +33,7 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
   }, []);
 
   const filteredColumns = columns.filter(col =>
-    (col.name || col.label || '').toLowerCase().includes(search.toLowerCase())
+    (t(col.id) || col.name || col.label || '').toLowerCase().includes(search.toLowerCase())
   );
 
   const toggleValue = (val: string) => {
@@ -43,10 +43,13 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
     onChange(next);
   };
 
+  const firstCol = columns.find(c => c.id === selectedValues[0]);
+  const firstColName = firstCol ? (t(firstCol.id) || firstCol.name || firstCol.label) : '';
+
   const displayText = selectedValues.length === 0
-    ? (language === 'fa' ? 'هیچ ستونی انتخاب نشده' : 'No columns selected')
+    ? t('noColumnsSelected')
     : selectedValues.length === 1
-    ? (columns.find(c => c.id === selectedValues[0])?.name || columns.find(c => c.id === selectedValues[0])?.label || '')
+    ? firstColName
     : language === 'fa'
     ? `${selectedValues.length} ستون انتخاب شده`
     : `${selectedValues.length} columns selected`;
@@ -72,7 +75,7 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
               <Search className="w-3.5 h-3.5 absolute start-2.5 top-2 text-gray-400" />
               <input
                 type="text"
-                placeholder={language === 'fa' ? 'جستجوی ستون...' : 'Search column...'}
+                placeholder={t('searchColumn')}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="w-full bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg ps-8 pe-3 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 text-gray-800 dark:text-slate-100 text-start"
@@ -82,7 +85,7 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
           <div className="max-h-40 overflow-y-auto space-y-1.5 pr-1">
             {filteredColumns.length === 0 ? (
               <p className="text-[11px] text-gray-400 text-center py-2">
-                {language === 'fa' ? 'ستونی یافت نشد' : 'No columns found'}
+                {t('noColumnsFound')}
               </p>
             ) : (
               filteredColumns.map(col => {
@@ -98,7 +101,7 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
                       onChange={() => toggleValue(col.id)}
                       className="rounded border-gray-300 dark:border-slate-700 text-indigo-500 focus:ring-indigo-500"
                     />
-                    <span className="truncate">{col.name || col.label}</span>
+                    <span className="truncate">{t(col.id) || col.name || col.label}</span>
                   </label>
                 );
               })

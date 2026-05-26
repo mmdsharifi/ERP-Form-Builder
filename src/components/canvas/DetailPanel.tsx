@@ -19,6 +19,7 @@ interface DetailPanelProps {
   handleDragOver: (e: React.DragEvent) => void;
   language: 'fa' | 'en';
   t: (key: string) => string;
+  translateTitle: (title: string) => string;
   entities: Record<string, { name: string; fields: any[] }>;
   draggedType: 'field' | 'column' | null;
 }
@@ -37,6 +38,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
   handleDragOver,
   language,
   t,
+  translateTitle,
   entities,
   draggedType,
 }) => {
@@ -96,7 +98,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
                             className="bg-transparent border-b border-indigo-300 outline-none w-20 text-center"
                           />
                         ) : (
-                          level2Tabs[0].title
+                          translateTitle(level2Tabs[0].title)
                         )}
                       </div>
                       <button 
@@ -117,7 +119,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
                           setActiveL2TabId(newId);
                           setSelectedElement({ ...newTab, id: `l2-panel-${newTab.id}`, type: 'container-l2-panel', label: newTab.title, _tabId: newTab.id, _context: 'l2' });
                         }} 
-                        className="text-gray-400 hover:text-indigo-600 transition-colors ml-2 cursor-pointer"
+                        className="text-gray-400 hover:text-indigo-600 transition-colors ms-2 cursor-pointer"
                       >
                         <Plus className="w-4 h-4" />
                       </button>
@@ -201,11 +203,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
                     className={`relative group/tab flex items-center transition-all duration-200 cursor-grab active:cursor-grabbing px-2.5 ${
                       draggedTabId === tab.id ? 'opacity-30 scale-95 border-dashed border-2 border-indigo-300 dark:border-slate-700' : ''
                     } ${
-                      dragOverTabId === tab.id 
-                        ? (language === 'fa' 
-                            ? 'border-r-4 border-indigo-500 dark:border-indigo-400 pr-2' 
-                            : 'border-l-4 border-indigo-500 dark:border-indigo-400 pl-2') 
-                        : ''
+                      dragOverTabId === tab.id ? 'border-s-4 border-indigo-500 dark:border-indigo-400 ps-2' : ''
                     }`}
                   >
                     {/* Drag Grip Icon on Hover */}
@@ -241,7 +239,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
                           className="bg-transparent border-b border-indigo-300 outline-none w-24 text-center pointer-events-auto"
                         />
                       ) : (
-                        tab.title
+                        translateTitle(tab.title)
                       )}
                       {activeL2TabId === tab.id && (
                         <motion.div 
@@ -291,7 +289,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
                      setActiveL2TabId(newId);
                      setSelectedElement({ ...newTab, id: `l2-panel-${newTab.id}`, type: 'container-l2-panel', label: newTab.title, _tabId: newTab.id, _context: 'l2' });
                   }}
-                  className="px-2 py-1.5 text-gray-400 hover:text-indigo-600 hover:bg-gray-100/80 rounded-md transition-all flex items-center justify-center my-[5px] ml-4 cursor-pointer"
+                  className="px-2 py-1.5 text-gray-400 hover:text-indigo-600 hover:bg-gray-100/80 rounded-md transition-all flex items-center justify-center my-[5px] ms-4 cursor-pointer"
                 >
                   <Plus className="w-4 h-4" />
                 </button>
@@ -318,7 +316,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
                           <div className="animate-scan" />
                           <div className="flex items-center justify-center gap-3 text-indigo-600 dark:text-indigo-400 mb-2">
                             <Database className="w-5 h-5 animate-bounce" />
-                            <span className="text-xs font-bold">{language === 'fa' ? 'در حال اتصال به موجودیت و همگام‌سازی ستون‌های گرید...' : 'Connecting to entity and syncing grid columns...'}</span>
+                            <span className="text-xs font-bold">{t('connectingGridColumns')}</span>
                           </div>
                           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                             <div className="animate-shimmer h-12 rounded-lg border border-gray-100 dark:border-slate-800" />
@@ -360,7 +358,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
                               <option value="" disabled className="dark:bg-slate-900 dark:text-slate-400">{t('selectEntity')}</option>
                               {Object.entries(entities).map(([key, ent]: [string, any]) => (
                                 <option key={key} value={key} className="dark:bg-slate-900 dark:text-slate-100">
-                                  {ent.name}
+                                  {t(key)}
                                 </option>
                               ))}
                             </select>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Plus, Trash2, X, AlertCircle, Save, Database, Check, ChevronDown } from 'lucide-react';
+import { Plus, Trash2, X, AlertCircle, Save, Database, ChevronDown } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { PropertyField } from '../shared/PropertyField';
 
@@ -49,7 +49,7 @@ export const EntityCreatorSettings: React.FC<EntityCreatorSettingsProps> = ({
 
   // Popover state for creating/editing a field
   const [editingField, setEditingField] = useState<(FieldDef & { isNew?: boolean }) | null>(null);
-  const [popoverPosition, setPopoverPosition] = useState<{ top: number; height: number; right: number } | null>(null);
+  const [popoverPosition, setPopoverPosition] = useState<{ top: number; height: number; left: number; right: number } | null>(null);
 
   // Validation states
   const [systemNameError, setSystemNameError] = useState('');
@@ -77,7 +77,7 @@ export const EntityCreatorSettings: React.FC<EntityCreatorSettingsProps> = ({
     setSystemName(cleanVal);
 
     if (!isEditing && entities[cleanVal]) {
-      setSystemNameError(language === 'fa' ? 'این نام سیستمی قبلاً استفاده شده است' : 'System name already exists');
+      setSystemNameError(t('alertSystemNameExists'));
     } else {
       setSystemNameError('');
     }
@@ -92,6 +92,7 @@ export const EntityCreatorSettings: React.FC<EntityCreatorSettingsProps> = ({
     setPopoverPosition({
       top: rect.top,
       height: rect.height,
+      left: rect.left,
       right: rect.right
     });
     setEditingField({
@@ -112,7 +113,7 @@ export const EntityCreatorSettings: React.FC<EntityCreatorSettingsProps> = ({
   const handleSaveEntity = () => {
     if (!displayName.trim() || !systemName.trim() || systemNameError) return;
     if (fields.length === 0) {
-      alert(language === 'fa' ? 'لطفاً حداقل یک فیلد تعریف کنید' : 'Please define at least one field');
+      alert(t('alertDefineAtLeastOneField'));
       return;
     }
 
@@ -184,9 +185,9 @@ export const EntityCreatorSettings: React.FC<EntityCreatorSettingsProps> = ({
             onChange={(e) => setEntityStatus(e.target.value as any)}
             className="w-full appearance-none bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded ps-2.5 pe-7 py-1 text-[11px] font-bold text-gray-700 dark:text-slate-200 focus:outline-none focus:border-indigo-500 dark:focus:border-slate-500 transition-all cursor-pointer shadow-xs"
           >
-            <option value="draft" className="dark:bg-slate-900">{language === 'fa' ? 'ثبت موقت' : 'Draft'}</option>
-            <option value="published" className="dark:bg-slate-900">{language === 'fa' ? 'منتشر شده' : 'Published'}</option>
-            <option value="disabled" className="dark:bg-slate-900">{language === 'fa' ? 'غیرفعال' : 'Disabled'}</option>
+            <option value="draft" className="dark:bg-slate-900">{t('draft')}</option>
+            <option value="published" className="dark:bg-slate-900">{t('published')}</option>
+            <option value="disabled" className="dark:bg-slate-900">{t('disabled')}</option>
           </select>
           <div className="absolute inset-y-0 start-auto end-2 flex items-center pointer-events-none text-gray-400">
             <ChevronDown className="w-3.5 h-3.5" />
@@ -205,17 +206,17 @@ export const EntityCreatorSettings: React.FC<EntityCreatorSettingsProps> = ({
                   ? 'border-indigo-200 bg-indigo-50/70 text-indigo-650 hover:bg-indigo-100 hover:text-indigo-750 dark:border-indigo-900/40 dark:bg-indigo-950/20 dark:text-indigo-400 dark:hover:bg-indigo-900/30'
                   : 'border-gray-200 bg-gray-50 text-gray-400 dark:border-slate-800 dark:bg-slate-900/40 dark:text-slate-600 cursor-not-allowed shadow-none opacity-50'
               }`}
-              title={language === 'fa' ? 'ذخیره' : 'Save'}
+              title={t('save')}
             >
               <Save className="w-3.5 h-3.5" />
-              <span>{language === 'fa' ? 'ذخیره' : 'Save'}</span>
+              <span>{t('save')}</span>
             </button>
           )}
           <button
             type="button"
             onClick={() => setSelectedElement(selectedElement._backElement || null)}
             className="p-1 rounded text-gray-400 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-            title={language === 'fa' ? 'انصراف' : 'Cancel'}
+            title={t('cancel')}
           >
             <X className="w-4 h-4" />
           </button>
@@ -225,7 +226,7 @@ export const EntityCreatorSettings: React.FC<EntityCreatorSettingsProps> = ({
       {/* Main entity inputs */}
       <div className="space-y-3.5">
         <PropertyField
-          label={language === 'fa' ? 'نام نمایشی موجودیت' : 'Display Name'}
+          label={t('entityDisplayName')}
           type="text"
           disabled={isPublished}
           value={displayName}
@@ -235,7 +236,7 @@ export const EntityCreatorSettings: React.FC<EntityCreatorSettingsProps> = ({
 
         <div className="relative">
           <PropertyField
-            label={language === 'fa' ? 'نام سیستمی موجودیت (انگلیسی)' : 'System Name (English)'}
+            label={t('entitySystemName')}
             type="text"
             value={systemName}
             onChange={handleSystemNameChange}
@@ -255,13 +256,13 @@ export const EntityCreatorSettings: React.FC<EntityCreatorSettingsProps> = ({
       <div className="pt-4 border-t border-gray-200 dark:border-slate-800/60 relative">
         <div className="flex justify-between items-center mb-3">
           <span className="text-xs font-bold text-gray-800 dark:text-slate-200">
-            {language === 'fa' ? 'فیلدهای موجودیت' : 'Entity Fields'}
+            {t('entityFields')}
           </span>
           <button
             type="button"
             onClick={handleAddNewDraftField}
             className="p-1 rounded-md text-gray-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-gray-100 dark:hover:bg-slate-800/60 transition-all cursor-pointer"
-            title={language === 'fa' ? 'افزودن فیلد جدید' : 'Add New Field'}
+            title={t('addNewField')}
           >
             <Plus className="w-4 h-4" />
           </button>
@@ -278,6 +279,7 @@ export const EntityCreatorSettings: React.FC<EntityCreatorSettingsProps> = ({
                 setPopoverPosition({
                   top: rect.top,
                   height: rect.height,
+                  left: rect.left,
                   right: rect.right
                 });
                 setEditingField({ ...f, isNew: false });
@@ -292,7 +294,7 @@ export const EntityCreatorSettings: React.FC<EntityCreatorSettingsProps> = ({
                 <div className="flex flex-col text-start min-w-0">
                   {/* Farsi Label */}
                   <span className="text-xs font-semibold truncate text-gray-800 dark:text-slate-200">
-                    {f.label || (language === 'fa' ? 'فیلد بدون نام' : 'Unnamed Field')}
+                    {t(f.id) || f.label || t('unnamedField')}
                   </span>
                   {/* English ID • Type format in small text */}
                   <div className="flex items-center gap-1.5 mt-0.5 text-[10px] text-gray-400 dark:text-slate-500 font-medium">
@@ -303,7 +305,7 @@ export const EntityCreatorSettings: React.FC<EntityCreatorSettingsProps> = ({
                       <>
                         <span className="text-gray-300 dark:text-slate-700">|</span>
                         <span className="text-indigo-500 dark:text-indigo-400 font-semibold truncate">
-                          ➔ {(entities[f.relatedEntity]?.name || f.relatedEntity)}
+                          ➔ {t(f.relatedEntity) || (entities[f.relatedEntity]?.name || f.relatedEntity)}
                         </span>
                       </>
                     )}
@@ -321,7 +323,7 @@ export const EntityCreatorSettings: React.FC<EntityCreatorSettingsProps> = ({
                       handleRemoveField(f.id);
                     }}
                     className="opacity-0 group-hover:opacity-100 rounded p-1 text-gray-400 hover:text-red-500 cursor-pointer transition-opacity duration-150"
-                    title={language === 'fa' ? 'حذف فیلد' : 'Delete Field'}
+                    title={t('delete')}
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -335,7 +337,7 @@ export const EntityCreatorSettings: React.FC<EntityCreatorSettingsProps> = ({
                 <Database className="w-5 h-5" />
               </div>
               <div className="max-w-[200px] leading-relaxed">
-                {language === 'fa' ? 'هنوز فیلدی تعریف نشده است. با زدن دکمه + فیلد جدید اضافه کنید.' : 'No fields defined yet. Press + to add a field.'}
+                {t('noFieldsDefined')}
               </div>
             </div>
           )}
@@ -375,29 +377,38 @@ export const EntityCreatorSettings: React.FC<EntityCreatorSettingsProps> = ({
                     }}
                   />
                   <motion.div
-                    initial={{ opacity: 0, scale: 0.95, x: 10 }}
+                    initial={{ opacity: 0, scale: 0.95, x: language === 'fa' ? -10 : 10 }}
                     animate={{ opacity: 1, scale: 1, x: 0 }}
-                    exit={{ opacity: 0, scale: 0.95, x: 10 }}
+                    exit={{ opacity: 0, scale: 0.95, x: language === 'fa' ? -10 : 10 }}
                     transition={{ duration: 0.15, ease: 'easeOut' }}
                     style={{ 
                       top: `${top}px`, 
-                      left: `${popoverPosition.right + 12}px`,
+                      left: language === 'fa'
+                        ? `${popoverPosition.right + 12}px`
+                        : `${popoverPosition.left - 280 - 12}px`,
                       width: '280px'
                     }}
                     className="absolute z-[10000] bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl shadow-xl p-4 space-y-3.5 text-start pointer-events-auto"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    {/* Left pointing arrow rotated 45 degrees */}
-                    <div 
-                      style={{ top: `${arrowTop}px` }} 
-                      className="absolute left-[-6px] w-3 h-3 bg-white dark:bg-slate-900 border-t border-l border-gray-200 dark:border-slate-800 rotate-45 -translate-y-1/2" 
-                    />
+                    {/* Conditional Arrow orientation and placement */}
+                    {language === 'fa' ? (
+                      <div 
+                        style={{ top: `${arrowTop}px` }} 
+                        className="absolute left-[-6px] w-3 h-3 bg-white dark:bg-slate-900 border-t border-l border-gray-200 dark:border-slate-800 rotate-45 -translate-y-1/2" 
+                      />
+                    ) : (
+                      <div 
+                        style={{ top: `${arrowTop}px` }} 
+                        className="absolute right-[-6px] w-3 h-3 bg-white dark:bg-slate-900 border-r border-b border-gray-200 dark:border-slate-800 rotate-45 -translate-y-1/2" 
+                      />
+                    )}
 
                     <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-slate-800/60">
                       <span className="text-xs font-bold text-gray-805 dark:text-slate-200">
                         {editingField.isNew
-                          ? (language === 'fa' ? 'فیلد جدید' : 'New Field')
-                          : (language === 'fa' ? 'ویرایش فیلد' : 'Edit Field')}
+                          ? t('addNewField')
+                          : t('editField')}
                       </span>
                       <button 
                         type="button" 
@@ -410,7 +421,7 @@ export const EntityCreatorSettings: React.FC<EntityCreatorSettingsProps> = ({
 
                     <div className="space-y-3">
                       <PropertyField
-                        label={language === 'fa' ? 'نام نمایشی فیلد' : 'Field Label'}
+                        label={t('fieldLabel')}
                         type="text"
                         disabled={isPublished}
                         value={editingField.label || ''}
@@ -426,7 +437,7 @@ export const EntityCreatorSettings: React.FC<EntityCreatorSettingsProps> = ({
 
                       <div className="relative">
                         <PropertyField
-                          label={language === 'fa' ? 'نام سیستمی فیلد' : 'Field ID'}
+                          label={t('fieldId')}
                           type="text"
                           disabled={isPublished}
                           value={editingField.id.startsWith('field_') ? '' : editingField.id}
@@ -437,22 +448,18 @@ export const EntityCreatorSettings: React.FC<EntityCreatorSettingsProps> = ({
                         />
                         {!isPublished && hasDuplicateId && (
                           <div className="text-[9px] text-red-500 font-semibold mt-0.5">
-                            {language === 'fa' ? 'شناسه تکراری است' : 'Duplicate ID'}
+                            {t('duplicateId')}
                           </div>
                         )}
                       </div>
 
                       <PropertyField
-                        label={language === 'fa' ? 'نوع فیلد' : 'Field Type'}
+                        label={t('fieldType')}
                         type="select"
                         disabled={isPublished}
                         value={editingField.type || 'comp-text'}
                         options={['comp-text', 'comp-number', 'comp-select', 'comp-check', 'comp-relation', 'comp-date']}
-                        optionsLabels={
-                          language === 'fa'
-                            ? ['متنی (Text)', 'عددی (Number)', 'کشویی (Dropdown)', 'چک‌باکس (Checkbox)', 'رابطه‌ای (Relation)', 'تاریخ (Date)']
-                            : ['Text', 'Number', 'Dropdown', 'Checkbox', 'Relation', 'Date']
-                        }
+                        optionsLabels={['comp-text', 'comp-number', 'comp-select', 'comp-check', 'comp-relation', 'comp-date'].map(type => getFieldTypeLabel(type))}
                         onChange={(val) => {
                           setEditingField({ ...editingField, type: val, relatedEntity: undefined });
                         }}
@@ -460,12 +467,12 @@ export const EntityCreatorSettings: React.FC<EntityCreatorSettingsProps> = ({
 
                       {editingField.type === 'comp-relation' && (
                         <PropertyField
-                          label={language === 'fa' ? 'موجودیت مرتبط' : 'Related Entity'}
+                          label={t('targetEntity')}
                           type="select"
                           disabled={isPublished}
                           value={editingField.relatedEntity || ''}
                           options={['', ...Object.keys(entities).filter(k => k !== systemName)]}
-                          optionsLabels={['-- انتخاب کنید --', ...Object.keys(entities).filter(k => k !== systemName).map(k => entities[k].name)]}
+                          optionsLabels={[t('selectOptionDropdown'), ...Object.keys(entities).filter(k => k !== systemName).map(k => t(k) || entities[k].name)]}
                           onChange={(val) => {
                             setEditingField({ ...editingField, relatedEntity: val });
                           }}
@@ -490,14 +497,14 @@ export const EntityCreatorSettings: React.FC<EntityCreatorSettingsProps> = ({
                           className="flex-1 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white disabled:bg-gray-100 disabled:text-gray-400 dark:disabled:bg-slate-800 dark:disabled:text-slate-600 rounded-xl text-xs font-semibold shadow-xs transition-all cursor-pointer flex items-center justify-center gap-1.5"
                         >
                           <Save className="w-3.5 h-3.5" />
-                          <span>{language === 'fa' ? 'ذخیره' : 'Save'}</span>
+                          <span>{t('save')}</span>
                         </button>
                         <button
                           type="button"
                           onClick={() => setEditingField(null)}
                           className="flex-1 py-1.5 bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-750 rounded-xl text-xs font-semibold transition-all cursor-pointer"
                         >
-                          {language === 'fa' ? 'انصراف' : 'Cancel'}
+                          {t('cancel')}
                         </button>
                       </div>
                     )}

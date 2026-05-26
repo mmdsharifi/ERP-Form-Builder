@@ -340,7 +340,7 @@ export const GridTable: React.FC<GridTableProps> = ({
                       {col.type === 'comp-formula' && (
                         <FunctionSquare className="w-3.5 h-3.5 text-violet-500 flex-shrink-0" />
                       )}
-                      {col.name || col.label}
+                      {col.id ? t(col.id) : (col.name || col.label)}
                       {col.required && <span className="text-red-500">*</span>}
                     </span>
                     <div className="flex items-center gap-1">
@@ -462,7 +462,7 @@ export const GridTable: React.FC<GridTableProps> = ({
                           onDragStart={(e) => handleDragStartRow(e, row.id)}
                           onDragEnd={handleDragEndRow}
                           className="cursor-grab active:cursor-grabbing text-gray-400 dark:text-slate-500 hover:text-indigo-650 dark:hover:text-indigo-400 p-0.5 inline-flex items-center justify-center transition-colors"
-                          title={language === 'fa' ? 'جابجایی سطر' : 'Drag to reorder'}
+                          title={t('dragToReorder')}
                         >
                           <GripVertical className="w-3.5 h-3.5" />
                         </div>
@@ -518,7 +518,7 @@ export const GridTable: React.FC<GridTableProps> = ({
                             isTarget ? (
                               <div className="flex justify-start" onClick={(e) => e.stopPropagation()}>
                                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/45 text-indigo-700 dark:text-indigo-400 border border-indigo-100/60 dark:border-indigo-900/30 font-normal">
-                                  <span>{col.name || col.label}</span>
+                                  <span>{col.id ? t(col.id) : (col.name || col.label)}</span>
                                   <button
                                     type="button"
                                     onClick={() => {
@@ -528,7 +528,7 @@ export const GridTable: React.FC<GridTableProps> = ({
                                       }
                                     }}
                                     className="hover:text-red-500 text-gray-400 dark:text-slate-500 transition-colors p-0.5 cursor-pointer border-none bg-transparent"
-                                    title={language === 'fa' ? 'حذف ستون' : 'Remove Column'}
+                                    title={t('removeColumn')}
                                   >
                                     <X className="w-2.5 h-2.5" />
                                   </button>
@@ -547,13 +547,13 @@ export const GridTable: React.FC<GridTableProps> = ({
                                 className="inline-flex items-center gap-1 text-[10px] text-indigo-650 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-semibold cursor-pointer border-none bg-transparent hover:bg-indigo-50/50 dark:hover:bg-slate-800/40 rounded px-1.5 py-1 transition-colors"
                               >
                                 <Plus className="w-3 h-3" />
-                                <span>{language === 'fa' ? 'افزودن' : 'Add'}</span>
+                                <span>{t('addColumn')}</span>
                               </button>
                             )
                           ) : isTarget ? (
                             <div className="flex justify-start" onClick={(e) => e.stopPropagation()}>
                               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/45 text-indigo-700 dark:text-indigo-400 border border-indigo-100/60 dark:border-indigo-900/30 font-normal">
-                                <span>{col.name || col.label}</span>
+                                <span>{col.id ? t(col.id) : (col.name || col.label)}</span>
                                 <button
                                   type="button"
                                   onClick={() => {
@@ -563,7 +563,7 @@ export const GridTable: React.FC<GridTableProps> = ({
                                     }
                                   }}
                                   className="hover:text-red-500 text-gray-400 dark:text-slate-500 transition-colors p-0.5 cursor-pointer border-none bg-transparent"
-                                  title={language === 'fa' ? 'حذف ستون' : 'Remove Column'}
+                                  title={t('removeColumn')}
                                 >
                                   <X className="w-2.5 h-2.5" />
                                 </button>
@@ -613,7 +613,7 @@ export const GridTable: React.FC<GridTableProps> = ({
                       className="flex items-center gap-1.5 text-xs font-semibold text-indigo-650 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-colors py-1 px-2 hover:bg-indigo-50 dark:hover:bg-slate-800/50 rounded cursor-pointer"
                     >
                       <Plus className="w-3.5 h-3.5" />
-                      {language === 'fa' ? 'افزودن سطر تجمیعی' : 'Add Summary Row'}
+                      {t('addSummaryRow')}
                     </button>
                   </td>
                 </tr>

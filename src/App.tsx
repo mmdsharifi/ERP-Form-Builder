@@ -63,6 +63,7 @@ export default function App() {
                 handleDeleteGroup={formState.handleDeleteGroup}
                 handleDeleteElement={formState.handleDeleteElement}
                 t={formState.t}
+                translateTitle={formState.translateTitle}
                 entities={formState.entities}
                 handleBindEntity={formState.handleBindEntity}
                 draggedType={formState.draggedType}
@@ -87,6 +88,7 @@ export default function App() {
                 handleDragOver={formState.handleDragOver}
                 language={formState.language}
                 t={formState.t}
+                translateTitle={formState.translateTitle}
                 entities={formState.entities}
                 draggedType={formState.draggedType}
                 setDraggedType={formState.setDraggedType}
@@ -106,6 +108,7 @@ export default function App() {
           handleBindEntity={formState.handleBindEntity}
           language={formState.language}
           t={formState.t}
+          translateTitle={formState.translateTitle}
           entities={formState.entities}
           addEntity={formState.addEntity}
           mainPanelColumns={formState.mainPanelColumns}

@@ -35,21 +35,21 @@ export const FieldSettings: React.FC<FieldSettingsProps> = ({
       {selectedElement.type !== 'comp-formula' && (
         <div className="space-y-2.5">
           <h4 className="text-xs font-bold text-gray-800 dark:text-slate-200">
-            {language === 'fa' ? 'اتصال داده' : 'Data Binding'}
+            {t('dataBinding')}
           </h4>
           <PropertyField 
-            label="موجودیت متصل" 
+            label={t('connectedEntity')} 
             type="text" 
-            value={currentEntityName || 'نامشخص'} 
+            value={currentEntityName ? t(currentEntityName) : t('unspecified')} 
             onChange={() => {}} 
             disabled={true}
           />
           <PropertyField 
-            label="اتصال به فیلد موجودیت" 
+            label={t('bindToEntityField')} 
             type="select" 
             value={selectedElement.boundSystemField || ''} 
             options={['', ...availableFieldsOptions]} 
-            optionsLabels={['-- انتخاب فیلد --', ...availableFieldsLabels]} 
+            optionsLabels={[t('selectFieldDropdown'), ...availableFieldsLabels.map(lbl => t(lbl))]} 
             onChange={(val) => {
               updateElementProp('boundSystemField', val);
               const fieldDef = currentEntityFieldsObj.find((f: any) => f.id === val);
@@ -66,26 +66,26 @@ export const FieldSettings: React.FC<FieldSettingsProps> = ({
       {/* 2. Validation & Access Group */}
       <div className="pt-3.5 border-t border-gray-100 dark:border-slate-800/60 space-y-2">
         <h4 className="text-xs font-bold text-gray-800 dark:text-slate-200">
-          {language === 'fa' ? 'اعتبارسنجی و دسترسی' : 'Access & Validation'}
+          {t('accessAndValidation')}
         </h4>
         <div className="space-y-2">
           <ToggleSwitch 
-            label="نمایش" 
+            label={t('visible')} 
             checked={selectedElement.visible !== false} 
             onChange={(val) => {
               if (!val && selectedElement.required) {
-                alert('فیلدی که اجباری است نمیتواند غیر قابل نمایش باشد');
+                alert(t('alertRequiredMustBeVisible'));
                 return;
               }
               updateElementProp('visible', val);
             }} 
           />
           <ToggleSwitch 
-            label="الزامی بودن" 
+            label={t('required')} 
             checked={!!selectedElement.required} 
             onChange={(val) => {
               if (val && selectedElement.visible === false) {
-                alert('اگر فیلدی نمایش آن غیر فعال بود نمیتوان اجباری باشد');
+                alert(t('alertHiddenCannotBeRequired'));
                 return;
               }
               updateElementProp('required', val);
@@ -95,11 +95,11 @@ export const FieldSettings: React.FC<FieldSettingsProps> = ({
             }} 
           />
           <ToggleSwitch 
-            label="قابل ویرایش" 
+            label={t('editable')} 
             checked={selectedElement.editable !== false} 
             onChange={(val) => {
               if (!val && selectedElement.required) {
-                alert('امکان غیرفعال کردن ویرایش در حالت اجباری وجود ندارد');
+                alert(t('alertRequiredMustBeEditable'));
                 return;
               }
               updateElementProp('editable', val);
@@ -111,10 +111,10 @@ export const FieldSettings: React.FC<FieldSettingsProps> = ({
       {/* 3. Appearance & Layout Group */}
       <div className="pt-3.5 border-t border-gray-100 dark:border-slate-800/60 space-y-2.5">
         <h4 className="text-xs font-bold text-gray-800 dark:text-slate-200">
-          {language === 'fa' ? 'ظاهر و چیدمان' : 'Layout & Appearance'}
+          {t('layoutAndAppearance')}
         </h4>
         <PropertyField 
-          label="متن راهنما (Helper Text)" 
+          label={t('helperTextLabel')} 
           type="text" 
           value={selectedElement.placeholder || ''} 
           onChange={(val) => updateElementProp('placeholder', val)} 
@@ -122,7 +122,7 @@ export const FieldSettings: React.FC<FieldSettingsProps> = ({
 
         {selectedElement._groupId && (
           <PropertyField 
-            label={language === 'fa' ? 'عرض فیلد (تعداد ستون)' : 'Field Width (Span)'} 
+            label={t('fieldWidthSpan')} 
             type="select" 
             value={String(selectedElement.colSpan || 1)} 
             options={Array.from({ length: selectedElement._groupColumns || 5 }, (_, i) => String(i + 1))} 
@@ -142,46 +142,48 @@ export const FieldSettings: React.FC<FieldSettingsProps> = ({
       {['comp-text', 'comp-number', 'comp-select', 'comp-check', 'comp-relation', 'comp-formula'].includes(selectedElement.type) && (
         <div className="pt-3.5 border-t border-gray-100 dark:border-slate-800/60 space-y-2.5">
           <h4 className="text-xs font-bold text-gray-800 dark:text-slate-200">
-            {language === 'fa' ? 'تنظیمات اختصاصی' : 'Specialized Settings'}
+            {t('specializedSettings')}
           </h4>
 
           {selectedElement.type === 'comp-text' && (
             <TextFieldSettings 
               selectedElement={selectedElement} 
               updateElementProp={updateElementProp} 
+              t={t}
+              language={language}
             />
           )}
           
           {selectedElement.type === 'comp-number' && (
             <div className="space-y-2.5">
-              <PropertyField label="حداقل مقدار" type="text" value={selectedElement.min || ''} onChange={(val) => updateElementProp('min', val)} />
-              <PropertyField label="حداکثر مقدار" type="text" value={selectedElement.max || ''} onChange={(val) => updateElementProp('max', val)} />
+              <PropertyField label={t('minVal')} type="text" value={selectedElement.min || ''} onChange={(val) => updateElementProp('min', val)} />
+              <PropertyField label={t('maxVal')} type="text" value={selectedElement.max || ''} onChange={(val) => updateElementProp('max', val)} />
             </div>
           )}
 
           {selectedElement.type === 'comp-select' && (
             <div className="space-y-2.5">
-              <PropertyField label="منبع داده" type="select" value={selectedElement.dataSource || 'static'} options={['static', 'dynamic']} optionsLabels={['مقادیر ثابت', 'داینامیک (API)']} onChange={(val) => updateElementProp('dataSource', val)} />
+              <PropertyField label={t('dataSource')} type="select" value={selectedElement.dataSource || 'static'} options={['static', 'dynamic']} optionsLabels={[t('staticSource'), t('dynamicSource')]} onChange={(val) => updateElementProp('dataSource', val)} />
               {selectedElement.dataSource !== 'dynamic' && (
-                 <PropertyField label="گزینه‌های لیست" type="text" value={selectedElement.optionsList || ''} onChange={(val) => updateElementProp('optionsList', val)} />
+                 <PropertyField label={t('listOptions')} type="text" value={selectedElement.optionsList || ''} onChange={(val) => updateElementProp('optionsList', val)} />
               )}
             </div>
           )}
           
           {selectedElement.type === 'comp-check' && (
             <div className="space-y-2.5">
-              <PropertyField label="متن چک‌باکس" type="text" value={selectedElement.checkText || selectedElement.label} onChange={(val) => updateElementProp('checkText', val)} />
+              <PropertyField label={t('checkboxText')} type="text" value={selectedElement.checkText || selectedElement.label} onChange={(val) => updateElementProp('checkText', val)} />
             </div>
           )}
 
           {selectedElement.type === 'comp-relation' && (
             <div className="space-y-2.5">
               <PropertyField 
-                label="موجودیت مرتبط (Target Entity)" 
+                label={t('targetEntity')} 
                 type="select" 
                 value={selectedElement.relatedEntity || ''} 
                 options={['', ...Object.keys(entities || {})]} 
-                optionsLabels={['-- انتخاب موجودیت --', ...Object.values(entities || {}).map((e: any) => e.name)]} 
+                optionsLabels={[t('selectEntityDropdown'), ...Object.values(entities || {}).map((e: any) => t(e.name))]} 
                 onChange={(val) => updateElementProp('relatedEntity', val)} 
               />
             </div>
@@ -190,7 +192,7 @@ export const FieldSettings: React.FC<FieldSettingsProps> = ({
           {selectedElement.type === 'comp-formula' && (
             <div className="space-y-2.5">
               <PropertyField 
-                label="عنوان ستون" 
+                label={t('columnTitle')} 
                 type="text" 
                 value={selectedElement.label || selectedElement.name || ''} 
                 onChange={(val) => {

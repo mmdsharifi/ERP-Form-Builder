@@ -18,6 +18,7 @@ interface SettingsPanelProps {
   handleBindEntity: (zone: string, entityKey: string) => void;
   language: 'fa' | 'en';
   t: (key: string) => string;
+  translateTitle: (title: string) => string;
   entities: Record<string, { name: string; fields: any[] }>;
   addEntity: (systemName: string, name: string, fields: any[]) => void;
   mainPanelColumns: number;
@@ -35,13 +36,14 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
   handleBindEntity,
   language,
   t,
+  translateTitle,
   entities,
   addEntity,
   mainPanelColumns,
   autoBindCreatedEntity
 }) => {
   return (
-    <aside className="w-72 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-r border-white/40 dark:border-slate-800 shadow-[-4px_0_15px_-3px_rgba(0,0,0,0.05)] flex flex-col z-10">
+    <aside className="w-72 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-s border-white/40 dark:border-slate-800 shadow-[-4px_0_15px_-3px_rgba(0,0,0,0.05)] rtl:shadow-[4px_0_15px_-3px_rgba(0,0,0,0.05)] flex flex-col z-10">
       <div className="p-4 border-b border-gray-100 dark:border-slate-800 flex items-center gap-2 bg-gray-50/50 dark:bg-slate-900/50 text-start">
         {selectedElement?.type === 'entity-creator' ? (
           <Database className="w-4 h-4 text-gray-500" />
@@ -51,8 +53,8 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
         <h2 className="font-bold text-gray-700 dark:text-slate-300 text-sm">
           {selectedElement?.type === 'entity-creator'
             ? (selectedElement.id !== 'new_entity_creator'
-              ? (language === 'fa' ? 'ویرایش موجودیت' : 'Edit Entity')
-              : (language === 'fa' ? 'موجودیت جدید' : 'New Entity'))
+              ? t('editEntity')
+              : t('newEntity'))
             : t('settings')
           }
         </h2>
@@ -64,7 +66,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
             if (selectedElement._context === 'main') currentEntityKey = boundMainEntity;
             else if (selectedElement._context === 'l2') currentEntityKey = level2Tabs.find(t => t.id === selectedElement._tabId)?.boundEntity || '';
           }
-          const currentEntityName = currentEntityKey ? (entities[currentEntityKey]?.name || currentEntityKey) : '';
+          const currentEntityName = currentEntityKey ? (t(currentEntityKey) || entities[currentEntityKey]?.name || currentEntityKey) : '';
           const currentEntityFieldsObj = currentEntityKey ? ((entities as any)[currentEntityKey]?.fields || []) : [];
           
           let usedFields = [] as string[];
@@ -77,7 +79,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
           }
           const availableFields = currentEntityFieldsObj.filter((f: any) => !usedFields.includes(f.id) || f.id === selectedElement?.boundSystemField);
           const availableFieldsOptions = availableFields.map((f: any) => f.id);
-          const availableFieldsLabels = availableFields.map((f: any) => `${f.label} (${f.name || f.id})`);
+          const availableFieldsLabels = availableFields.map((f: any) => `${t(f.id) || f.label} (${f.id})`);
 
           let numericColumns: any[] = [];
           if (selectedElement && selectedElement.type === 'comp-formula') {
@@ -116,7 +118,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                   <div className="space-y-3 text-start">
                     <div className="flex items-center justify-between mb-3 pb-1 border-b border-gray-100 dark:border-slate-800/40">
                       <span className="text-xs font-bold text-gray-800 dark:text-slate-200">
-                        {language === 'fa' ? 'موجودیت متصل' : 'Connected Entity'}
+                        {t('connectedEntity')}
                       </span>
                       <button
                         type="button"
@@ -129,7 +131,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                           _backElement: selectedElement
                         })}
                         className="p-1 rounded-md text-gray-500 dark:text-slate-400 hover:text-indigo-650 dark:hover:text-indigo-400 hover:bg-gray-100 dark:hover:bg-slate-800/60 transition-all cursor-pointer"
-                        title={language === 'fa' ? 'تعریف موجودیت جدید' : 'New Entity'}
+                        title={t('newEntity')}
                       >
                         <Plus className="w-4 h-4" />
                       </button>
@@ -138,11 +140,11 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                     <div className="flex items-end gap-1.5 w-full">
                       <div className="flex-1 min-w-0">
                         <PropertyField 
-                          label={language === 'fa' ? 'اتصال موجودیت' : 'Connected Entity'} 
+                          label={t('bindEntity')} 
                           type="select" 
                           value={boundMainEntity} 
                           options={['', ...Object.keys(entities)]} 
-                          optionsLabels={[language === 'fa' ? '-- قطع اتصال --' : '-- Disconnect --', ...Object.keys(entities).map(k => entities[k].name)]} 
+                          optionsLabels={[t('disconnect'), ...Object.keys(entities).map(k => t(k) || entities[k].name)]} 
                           onChange={(val) => handleBindEntity('main', val)} 
                           info={t('bindEntityInfo')} 
                         />
@@ -164,7 +166,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                             });
                           }}
                           className="flex-shrink-0 h-[30px] w-[30px] bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-750 text-gray-650 dark:text-slate-300 border border-gray-200 dark:border-slate-700 rounded hover:shadow-xs transition-all cursor-pointer flex items-center justify-center shadow-sm"
-                          title={language === 'fa' ? 'ویرایش موجودیت' : 'Edit Entity'}
+                          title={t('editEntity')}
                         >
                           <Edit className="w-3.5 h-3.5" />
                         </button>
@@ -176,12 +178,12 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                   <div className="pt-4 border-t border-gray-200 dark:border-slate-800/60 space-y-3 text-start">
                     <div className="flex items-center justify-between mb-3 pb-1 border-b border-gray-100 dark:border-slate-800/40">
                       <span className="text-xs font-bold text-gray-800 dark:text-slate-200">
-                        {language === 'fa' ? 'تنظیمات ظاهری پنل' : 'Panel Settings'}
+                        {t('panelSettings')}
                       </span>
                     </div>
 
                     <PropertyField 
-                      label={language === 'fa' ? 'عنوان پنل' : t('panelTitle')} 
+                      label={t('panelTitle')} 
                       type="text" 
                       value={selectedElement.label} 
                       info={t('panelTitleInfo')} 
@@ -191,7 +193,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                     />
 
                     <PropertyField 
-                      label={language === 'fa' ? 'تعداد ستون‌ها' : t('columnsCount')} 
+                      label={t('columnsCount')} 
                       type="select" 
                       value={selectedElement.columns?.toString() || '5'} 
                       options={['1', '2', '3', '4', '5', '6']} 
@@ -211,6 +213,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                   selectedElementId={selectedElement.id}
                   language={language}
                   t={t}
+                  translateTitle={translateTitle}
                   entities={entities}
                 />
               ) : (

@@ -49,6 +49,7 @@ interface FormPanelProps {
   draggedType?: 'field' | 'column' | null;
   onUpdateFieldProp?: (prop: string, value: any) => void;
   language?: 'fa' | 'en';
+  translateTitle?: (title: string) => string;
 }
 
 // ─── Inline tooltip ──────────────────────────────────────────────────────────
@@ -73,9 +74,10 @@ interface GroupHeaderProps {
   onDelete: (e: React.MouseEvent) => void;
   onRename?: (newName: string) => void;
   t: (key: string) => string;
+  translateTitle?: (title: string) => string;
 }
 
-const GroupHeader: React.FC<GroupHeaderProps> = ({ group, isSelected, collapsed, onToggle, onDelete, onRename, t }) => {
+const GroupHeader: React.FC<GroupHeaderProps> = ({ group, isSelected, collapsed, onToggle, onDelete, onRename, t, translateTitle }) => {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(group.name);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -120,7 +122,7 @@ const GroupHeader: React.FC<GroupHeaderProps> = ({ group, isSelected, collapsed,
               setEditing(true);
             }}
           >
-            {group.name}
+            {translateTitle ? translateTitle(group.name) : group.name}
           </span>
         )}
       </h4>
@@ -159,6 +161,7 @@ export const FormPanel: React.FC<FormPanelProps> = ({
   draggedType,
   onUpdateFieldProp,
   language,
+  translateTitle,
 }) => {
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
   const [dragOverGroupId, setDragOverGroupId] = useState<string | null>(null);
@@ -359,6 +362,7 @@ export const FormPanel: React.FC<FormPanelProps> = ({
               onDelete={(e) => onDeleteGroup(e, group.id)}
               onRename={onRenameGroup ? (name) => onRenameGroup(group.id, name) : undefined}
               t={t}
+              translateTitle={translateTitle}
             />
           )}
 
@@ -475,7 +479,7 @@ export const FormPanel: React.FC<FormPanelProps> = ({
                         {/* Label row */}
                         <div className="flex items-center justify-between ps-5">
                           <label className="text-sm font-semibold text-gray-600 dark:text-slate-300 text-start flex items-center gap-1.5">
-                            {field.label}
+                            {field.boundSystemField ? t(field.boundSystemField) : field.label}
                             {field.required && <span className="text-red-500">*</span>}
                             {field.placeholder && (
                               <span className="relative group/tooltip flex items-center inline-block">
@@ -501,7 +505,7 @@ export const FormPanel: React.FC<FormPanelProps> = ({
                         {field.type === 'comp-check' ? (
                           <div className={`flex items-center h-10 px-3 border border-gray-200 dark:border-slate-700 rounded-md ${field.editable === false ? 'bg-gray-100 dark:bg-slate-800' : 'bg-white dark:bg-slate-900'}`}>
                             <input type="checkbox" disabled className="w-4 h-4 rounded text-indigo-500 cursor-not-allowed" />
-                            <span className="ms-2 text-sm text-gray-500 dark:text-slate-400">{field.checkText || field.label}</span>
+                            <span className="ms-2 text-sm text-gray-500 dark:text-slate-400">{field.checkText || (field.boundSystemField ? t(field.boundSystemField) : field.label)}</span>
                           </div>
                         ) : field.type === 'comp-text' && field.multiline ? (
                           <textarea

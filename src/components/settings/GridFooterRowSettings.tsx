@@ -34,7 +34,7 @@ export const GridFooterRowSettings: React.FC<GridFooterRowSettingsProps> = ({
     <div className="space-y-4">
       <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-slate-800">
         <h3 className="font-bold text-gray-700 dark:text-slate-200 text-sm">
-          {language === 'fa' ? 'تنظیمات سطر تجمیعی' : 'Summary Row Settings'}
+          {t('summaryRowSettings')}
         </h3>
         <button
           type="button"
@@ -53,32 +53,28 @@ export const GridFooterRowSettings: React.FC<GridFooterRowSettingsProps> = ({
           }}
           className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
         >
-          {language === 'fa' ? '← بازگشت به تب' : '← Back to Tab'}
+          {t('backToTab')}
         </button>
       </div>
 
       <PropertyField
-        label={language === 'fa' ? 'عنوان سطر' : 'Row Title'}
+        label={t('rowTitle')}
         type="text"
         value={selectedElement.title || ''}
         onChange={(val) => updateElementProp('title', val)}
       />
 
       <PropertyField
-        label={language === 'fa' ? 'نوع محاسبات' : 'Calculation'}
+        label={t('calculation')}
         type="select"
         value={selectedElement.operator || 'sum'}
         options={['sum', 'avg', 'min', 'max', 'count']}
-        optionsLabels={
-          language === 'fa'
-            ? ['جمع (Sum)', 'میانگین (Average)', 'کمینه (Min)', 'بیشینه (Max)', 'تعداد (Count)']
-            : ['Sum', 'Average', 'Min', 'Max', 'Count']
-        }
+        optionsLabels={['sum', 'avg', 'min', 'max', 'count'].map(op => t(op))}
         onChange={(val) => updateElementProp('operator', val)}
       />
 
       <MultiSelectDropdown
-        label={language === 'fa' ? 'ستون‌های هدف' : 'Target Columns'}
+        label={t('targetColumns')}
         columns={filteredColumns}
         selectedValues={selectedElement.selectedColumns || []}
         onChange={(val) => updateElementProp('selectedColumns', val)}

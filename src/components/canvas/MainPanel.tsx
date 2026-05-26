@@ -22,6 +22,7 @@ interface MainPanelProps {
   onUpdateFieldProp?: (prop: string, value: any) => void;
   language: 'fa' | 'en';
   t: (key: string) => string;
+  translateTitle: (title: string) => string;
 }
 
 export const MainPanel: React.FC<MainPanelProps> = ({
@@ -36,6 +37,7 @@ export const MainPanel: React.FC<MainPanelProps> = ({
   handleDeleteGroup,
   handleDeleteElement,
   t,
+  translateTitle,
   entities,
   handleBindEntity,
   draggedType,
@@ -56,10 +58,10 @@ export const MainPanel: React.FC<MainPanelProps> = ({
         <div className="flex items-center gap-2">
           {/* Main panel icon is chevron-gray */}
           <ChevronDown className="w-5 h-5 text-gray-500 dark:text-slate-400" />
-          <h3 className="font-bold text-gray-800 dark:text-slate-100 text-sm">{mainPanelName}</h3>
+          <h3 className="font-bold text-gray-800 dark:text-slate-100 text-sm">{translateTitle(mainPanelName)}</h3>
           {boundMainEntity && (
             <span className="bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/50 text-[10px] font-bold px-2 py-0.5 rounded-full">
-              {t('entity')}: {entities[boundMainEntity]?.name || boundMainEntity}
+              {t('entity')}: {t(boundMainEntity)}
             </span>
           )}
         </div>
@@ -70,7 +72,7 @@ export const MainPanel: React.FC<MainPanelProps> = ({
             <div className="animate-scan" />
             <div className="flex items-center justify-center gap-3 text-indigo-600 dark:text-indigo-400 mb-2">
               <Database className="w-5 h-5 animate-bounce" />
-              <span className="text-xs font-bold">{language === 'fa' ? 'در حال اتصال به موجودیت و همگام‌سازی فیلدها...' : 'Connecting to entity and syncing fields...'}</span>
+              <span className="text-xs font-bold">{t('connectingFields')}</span>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="animate-shimmer h-14 rounded-lg border border-gray-100 dark:border-slate-800" />
@@ -89,8 +91,8 @@ export const MainPanel: React.FC<MainPanelProps> = ({
                   const val = e.target.value;
                   setIsLoading(true);
                   setTimeout(() => {
-                    handleBindEntity('main', val);
-                    setIsLoading(false);
+                     handleBindEntity('main', val);
+                     setIsLoading(false);
                   }, 800);
                 }} 
                 onClick={(e) => e.stopPropagation()} 
@@ -99,7 +101,7 @@ export const MainPanel: React.FC<MainPanelProps> = ({
                 <option value="" disabled className="dark:bg-slate-900 dark:text-slate-400">{t('selectEntity')}</option>
                 {Object.entries(entities).map(([key, ent]: [string, any]) => (
                   <option key={key} value={key} className="dark:bg-slate-900 dark:text-slate-100">
-                    {ent.name}
+                    {t(key)}
                   </option>
                 ))}
               </select>

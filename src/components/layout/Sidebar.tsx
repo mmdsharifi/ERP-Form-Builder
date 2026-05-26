@@ -9,7 +9,7 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ onDragStart, t }) => {
   return (
-    <aside className="w-64 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-l border-white/40 dark:border-slate-800/80 shadow-lg flex flex-col z-10 transition-colors duration-200">
+    <aside className="w-64 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-e border-white/40 dark:border-slate-800/80 shadow-lg flex flex-col z-10 transition-colors duration-200">
       <div className="p-4 border-b border-gray-100 dark:border-slate-800 flex justify-between items-center bg-gray-50/50 dark:bg-slate-950/20 text-start">
         <h2 className="font-bold text-gray-700 dark:text-slate-200 text-sm">{t('fieldsAndComponents')}</h2>
       </div>
