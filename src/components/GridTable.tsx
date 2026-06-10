@@ -161,6 +161,9 @@ export const GridTable: React.FC<GridTableProps> = ({
   t,
   language,
   isDraggingColumn,
+  entities,
+  boundEntity,
+  onAddColumnDirectly,
 }) => {
   const hasFooter = !!footerLabel || columns.some(c => c.footerAgg && c.footerAgg !== 'none');
   const hasNumericColumn = columns.some(col => col.type === 'comp-number' || col.type === 'comp-formula');
@@ -172,6 +175,11 @@ export const GridTable: React.FC<GridTableProps> = ({
   const [dragOverColId, setDragOverColId] = useState<string | null>(null);
   const [draggedRowId, setDraggedRowId] = useState<string | null>(null);
   const [dragOverRowId, setDragOverRowId] = useState<string | null>(null);
+  const [showAddMenu, setShowAddMenu] = useState(false);
+
+  const currentEntityFieldsObj = entities && boundEntity ? (entities[boundEntity]?.fields || []) : [];
+  const usedCols = columns.map(c => c.boundSystemField || c.id).filter(Boolean);
+  const availableFields = currentEntityFieldsObj.filter((f: any) => !usedCols.includes(f.id));
 
   const handleDragStartRow = (e: React.DragEvent, id: string) => {
     e.stopPropagation();
@@ -363,7 +371,59 @@ export const GridTable: React.FC<GridTableProps> = ({
                   </div>
                 </th>
               ))}
-              <th className="py-2 px-3 w-10" />
+              <th className="py-2 px-3 w-10 text-center relative z-20">
+                {boundEntity && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); setShowAddMenu(!showAddMenu); }}
+                      className="p-1.5 hover:bg-indigo-50 dark:hover:bg-slate-800 text-indigo-600 dark:text-indigo-400 rounded-md transition-colors cursor-pointer flex items-center justify-center mx-auto"
+                      title={language === 'fa' ? 'افزودن ستون' : 'Add Column'}
+                    >
+                      <Plus className="w-4 h-4" />
+                    </button>
+                    {showAddMenu && (
+                      <>
+                        <div className="fixed inset-0 z-40" onClick={(e) => { e.stopPropagation(); setShowAddMenu(false); }} />
+                        <div className="absolute top-[100%] end-0 z-50 mt-1 w-56 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-xl shadow-xl p-2.5 max-h-60 overflow-y-auto text-start font-normal">
+                          <p className="text-[10px] text-gray-400 dark:text-slate-500 px-2 py-1 uppercase tracking-wider font-bold">{language === 'fa' ? 'فیلدهای موجودیت' : 'Entity Fields'}</p>
+                          {availableFields.length === 0 ? (
+                            <p className="text-[11px] text-gray-400 text-center py-2 px-2">{language === 'fa' ? 'همه فیلدها اضافه شده‌اند' : 'All fields added'}</p>
+                          ) : (
+                            availableFields.map(field => (
+                              <button
+                                key={field.id}
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onAddColumnDirectly?.(field.id);
+                                  setShowAddMenu(false);
+                                }}
+                                className="w-full text-start px-3 py-2 text-xs font-semibold text-gray-700 dark:text-slate-300 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-lg transition-colors cursor-pointer"
+                              >
+                                {t(field.id) || field.label}
+                              </button>
+                            ))
+                          )}
+                          <div className="border-t border-gray-100 dark:border-slate-800 my-1.5" />
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onAddColumnDirectly?.('comp-formula');
+                              setShowAddMenu(false);
+                            }}
+                            className="w-full text-start px-3 py-2 text-xs font-bold text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-950/30 rounded-lg transition-colors cursor-pointer flex items-center gap-1.5"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            <span>{language === 'fa' ? 'ستون محاسباتی' : 'Formula Column'}</span>
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </>
+                )}
+              </th>
             </tr>
           </thead>
 
@@ -373,16 +433,67 @@ export const GridTable: React.FC<GridTableProps> = ({
               <tr>
                 <td
                   colSpan={((settings.showCheckbox || hasFooterRows) ? 1 : 0) + (showExtraCol ? 1 : 0) + columns.length + 1}
-                  className="p-0 border-none"
+                  className="p-4 border-none relative"
                 >
-                  <div className={`my-4 py-12 text-center text-sm rounded-lg pointer-events-none transition-all border-2 border-dashed flex flex-col items-center justify-center gap-2 ${
-                    isDragOverTable
-                      ? 'border-indigo-500 text-indigo-600 bg-indigo-50/20 dark:border-indigo-400 dark:text-indigo-400 font-bold scale-[1.01]'
-                      : 'border-gray-200 dark:border-slate-800 text-gray-400 dark:text-slate-500 bg-gray-50/50 dark:bg-slate-900/40'
-                  }`}>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (!boundEntity) {
+                        alert(language === 'fa' ? 'لطفاً ابتدا اتصال موجودیت را انجام دهید.' : 'Please connect to an entity first.');
+                        return;
+                      }
+                      setShowAddMenu(!showAddMenu);
+                    }}
+                    className={`w-full my-4 py-12 text-center text-sm rounded-xl transition-all border-2 border-dashed flex flex-col items-center justify-center gap-2 cursor-pointer ${
+                      isDragOverTable
+                        ? 'border-indigo-500 text-indigo-600 bg-indigo-50/20 dark:border-indigo-400 dark:text-indigo-400 font-bold scale-[1.01]'
+                        : 'border-gray-200 dark:border-slate-800/80 text-gray-400 hover:text-indigo-650 hover:border-indigo-300 dark:text-slate-500 bg-gray-50/50 dark:bg-slate-900/40'
+                    }`}
+                  >
                     <Plus className={`w-5 h-5 transition-transform ${isDragOverTable ? 'scale-125 animate-bounce text-indigo-600 dark:text-indigo-400' : 'text-gray-300 dark:text-slate-600'}`} />
-                    <span>{t('dragColumnsHere')}</span>
-                  </div>
+                    <span>{boundEntity ? (language === 'fa' ? 'افزودن ستون (یا ستون‌ها را اینجا بکشید)' : 'Add Column (or drag columns here)') : (language === 'fa' ? 'ابتدا موجودیت را متصل کنید' : 'Connect entity first')}</span>
+                  </button>
+
+                  {showAddMenu && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={(e) => { e.stopPropagation(); setShowAddMenu(false); }} />
+                      <div className="absolute top-[70%] right-1/2 translate-x-1/2 z-50 mt-1 w-56 bg-white dark:bg-slate-950 border border-gray-200 dark:border-slate-800 rounded-xl shadow-xl p-2.5 max-h-60 overflow-y-auto text-start font-normal">
+                        <p className="text-[10px] text-gray-400 dark:text-slate-500 px-2 py-1 uppercase tracking-wider font-bold">{language === 'fa' ? 'فیلدهای موجودیت' : 'Entity Fields'}</p>
+                        {availableFields.length === 0 ? (
+                          <p className="text-[11px] text-gray-400 text-center py-2 px-2">{language === 'fa' ? 'همه فیلدها اضافه شده‌اند' : 'All fields added'}</p>
+                        ) : (
+                          availableFields.map(field => (
+                            <button
+                              key={field.id}
+                              type="button"
+                              onClick={(e) => {
+                                  e.stopPropagation();
+                                  onAddColumnDirectly?.(field.id);
+                                  setShowAddMenu(false);
+                              }}
+                              className="w-full text-start px-3 py-2 text-xs font-semibold text-gray-700 dark:text-slate-300 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-lg transition-colors cursor-pointer"
+                            >
+                              {t(field.id) || field.label}
+                            </button>
+                          ))
+                        )}
+                        <div className="border-t border-gray-100 dark:border-slate-800 my-1.5" />
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onAddColumnDirectly?.('comp-formula');
+                            setShowAddMenu(false);
+                          }}
+                          className="w-full text-start px-3 py-2 text-xs font-bold text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-950/30 rounded-lg transition-colors cursor-pointer flex items-center gap-1.5"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>{language === 'fa' ? 'ستون محاسباتی' : 'Formula Column'}</span>
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </td>
               </tr>
             ) : (

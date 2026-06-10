@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Trash2, GripVertical, Plus, ChevronUp, ChevronDown, Type, Hash, List, CheckSquare, Database, AlignLeft, FunctionSquare, Info } from 'lucide-react';
+import { Trash2, GripVertical, Plus, ChevronUp, ChevronDown, Type, Hash, List, CheckSquare, Database, AlignLeft, FunctionSquare, Info, Calendar } from 'lucide-react';
 import { getGridColsClass, getColSpanClass } from '../utils/gridCols';
 
 interface Field {
@@ -50,6 +50,9 @@ interface FormPanelProps {
   onUpdateFieldProp?: (prop: string, value: any) => void;
   language?: 'fa' | 'en';
   translateTitle?: (title: string) => string;
+  entities?: Record<string, { name: string; fields: any[] }>;
+  boundEntity?: string;
+  onAddFieldDirectly?: (groupId: string, fieldId: string) => void;
 }
 
 // ─── Inline tooltip ──────────────────────────────────────────────────────────
@@ -142,6 +145,18 @@ const GroupHeader: React.FC<GroupHeaderProps> = ({ group, isSelected, collapsed,
   );
 };
 
+const getFieldIcon = (type: string) => {
+  switch (type) {
+    case 'comp-text': return <Type className="w-4 h-4 text-blue-500" />;
+    case 'comp-number': return <Hash className="w-4 h-4 text-emerald-500" />;
+    case 'comp-select': return <List className="w-4 h-4 text-amber-500" />;
+    case 'comp-check': return <CheckSquare className="w-4 h-4 text-indigo-500" />;
+    case 'comp-relation': return <Database className="w-4 h-4 text-violet-500" />;
+    case 'comp-date': return <Calendar className="w-4 h-4 text-rose-500" />;
+    default: return <Type className="w-4 h-4 text-gray-500" />;
+  }
+};
+
 // ─── FormPanel ───────────────────────────────────────────────────────────────
 
 export const FormPanel: React.FC<FormPanelProps> = ({
@@ -162,6 +177,9 @@ export const FormPanel: React.FC<FormPanelProps> = ({
   onUpdateFieldProp,
   language,
   translateTitle,
+  entities,
+  boundEntity,
+  onAddFieldDirectly,
 }) => {
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
   const [dragOverGroupId, setDragOverGroupId] = useState<string | null>(null);
@@ -169,6 +187,11 @@ export const FormPanel: React.FC<FormPanelProps> = ({
 
   const [resizingFieldId, setResizingFieldId] = useState<string | null>(null);
   const [resizingColSpan, setResizingColSpan] = useState<number | null>(null);
+  const [showAddMenuGroupId, setShowAddMenuGroupId] = useState<string | null>(null);
+
+  const currentEntityFieldsObj = entities && boundEntity ? (entities[boundEntity]?.fields || []) : [];
+  const usedFields = groups.flatMap(g => g.fields).map(f => f.boundSystemField).filter(Boolean);
+  const availableFields = currentEntityFieldsObj.filter((f: any) => !usedFields.includes(f.id));
 
   const toggleCollapse = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
@@ -373,7 +396,7 @@ export const FormPanel: React.FC<FormPanelProps> = ({
                 animate={{ height: 'auto', opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
                 transition={{ duration: 0.25, ease: 'easeOut' }}
-                style={{ overflow: 'hidden' }}
+                style={{ overflow: 'visible' }}
               >
                 <motion.div 
                   variants={{
@@ -395,23 +418,88 @@ export const FormPanel: React.FC<FormPanelProps> = ({
                     </div>
                   )}
                   {group.fields.length === 0 ? (
-                    <div className={`col-span-full text-center text-xs py-8 border-2 border-dashed rounded-lg pointer-events-none transition-all flex flex-col items-center justify-center gap-2 ${
-                      dragOverGroupId === group.id
-                        ? 'border-indigo-500 text-indigo-600 bg-indigo-50/20 dark:border-indigo-400 dark:text-indigo-400 font-bold scale-[1.01]'
-                        : 'border-gray-200 dark:border-slate-800 text-gray-400 dark:text-slate-500'
-                    }`}>
-                      <Plus className={`w-5 h-5 transition-transform ${dragOverGroupId === group.id ? 'scale-125 animate-bounce text-indigo-600 dark:text-indigo-400' : 'text-gray-300 dark:text-slate-600'}`} />
-                      <span>{t('dropFieldsHere')}</span>
+                    <div className="col-span-full relative">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (!boundEntity) {
+                            alert(language === 'fa' ? 'لطفاً ابتدا اتصال موجودیت را انجام دهید.' : 'Please connect to an entity first.');
+                            return;
+                          }
+                          setShowAddMenuGroupId(group.id);
+                        }}
+                        className={`w-full text-center text-xs py-8 border-2 border-dashed rounded-lg transition-all flex flex-col items-center justify-center gap-2 cursor-pointer ${
+                          dragOverGroupId === group.id
+                            ? 'border-indigo-500 text-indigo-600 bg-indigo-50/20 dark:border-indigo-400 dark:text-indigo-400 font-bold scale-[1.01]'
+                            : 'border-gray-200 dark:border-slate-800/80 text-gray-400 hover:text-indigo-650 hover:border-indigo-300 dark:text-slate-500 bg-gray-50/20 dark:bg-slate-900/30'
+                        }`}
+                      >
+                        <Plus className={`w-5 h-5 transition-transform ${dragOverGroupId === group.id ? 'scale-125 animate-bounce text-indigo-600 dark:text-indigo-400' : 'text-gray-300 dark:text-slate-600'}`} />
+                        <span>{boundEntity ? (availableFields.length === 0 ? (language === 'fa' ? 'همه فیلدها استفاده شده‌اند' : 'All fields are used') : (language === 'fa' ? 'افزودن فیلد (یا فیلدها را اینجا بکشید)' : 'Add Field (or drag fields here)')) : (language === 'fa' ? 'ابتدا موجودیت را متصل کنید' : 'Connect entity first')}</span>
+                      </button>
+                      
+                      {showAddMenuGroupId === group.id && (
+                        <>
+                          <div className="fixed inset-0 z-40" onClick={(e) => { e.stopPropagation(); setShowAddMenuGroupId(null); }} />
+                          <div className="absolute top-[100%] right-1/2 translate-x-1/2 z-50 mt-2 w-64 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-xl shadow-xl p-2.5 max-h-72 overflow-y-auto text-start">
+                            <h5 className="text-[10px] font-bold text-gray-400 dark:text-slate-500 mb-2 px-2.5 py-1 uppercase tracking-wider">
+                              {language === 'fa' ? 'انتخاب فیلد برای افزودن' : 'Select Field to Add'}
+                            </h5>
+                            <div className="space-y-1">
+                              {availableFields.length === 0 ? (
+                                <p className="text-xs text-gray-450 dark:text-slate-500 text-center py-4">{language === 'fa' ? 'فیلد در دسترسی وجود ندارد' : 'No available fields'}</p>
+                              ) : (
+                                availableFields.map(field => (
+                                  <button
+                                    key={field.id}
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      onAddFieldDirectly?.(group.id, field.id);
+                                      setShowAddMenuGroupId(null);
+                                    }}
+                                    className="w-full flex items-center gap-3 px-2.5 py-1.5 text-xs font-semibold text-gray-700 dark:text-slate-355 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 hover:text-indigo-650 dark:hover:text-indigo-400 rounded-lg transition-colors cursor-pointer text-start"
+                                  >
+                                    <div className="p-1.5 bg-gray-50 dark:bg-slate-800 rounded-md">
+                                      {getFieldIcon(field.type)}
+                                    </div>
+                                    <div className="flex flex-col min-w-0">
+                                      <span className="truncate">{field.label}</span>
+                                      <span className="text-[9px] text-gray-400 dark:text-slate-500 font-normal">
+                                        {t(field.type) || field.type}
+                                      </span>
+                                    </div>
+                                  </button>
+                                ))
+                              )}
+                            </div>
+                          </div>
+                        </>
+                      )}
                     </div>
                   ) : (
-                    group.fields.map((field) => (
-                      <motion.div
-                        key={field.id}
-                        layout
-                        variants={{
-                          hidden: { opacity: 0, y: 15 },
-                          visible: { opacity: 1, y: 0, transition: { duration: 0.2, ease: 'easeOut' } }
-                        }}
+                    <>
+                      {group.fields.map((field) => (
+                        <React.Fragment key={field.id}>
+                          {draggedType === 'field' && dragOverFieldId === field.id && (
+                            <motion.div
+                              layout
+                              initial={{ opacity: 0, scale: 0.95 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              exit={{ opacity: 0, scale: 0.95 }}
+                              transition={{ duration: 0.2 }}
+                              className={`${getColSpanClass(field.colSpan || 1)} h-24 border-2 border-dashed border-indigo-400 dark:border-indigo-500 bg-indigo-50/10 dark:bg-indigo-950/20 rounded-xl flex items-center justify-center text-indigo-500/60 font-semibold text-xs animate-pulse`}
+                            >
+                              <span>{t('dropFieldsHere')}</span>
+                            </motion.div>
+                          )}
+                          <motion.div
+                            layout
+                            variants={{
+                              hidden: { opacity: 0, scale: 0.8, y: 15 },
+                              visible: { opacity: 1, scale: 1, y: 0, transition: { type: 'spring', stiffness: 350, damping: 15 } }
+                            }}
                         draggable={resizingFieldId === null}
                         onDragStart={(e) => {
                           if (resizingFieldId !== null) {
@@ -572,7 +660,70 @@ export const FormPanel: React.FC<FormPanelProps> = ({
                           </p>
                         )}
                       </motion.div>
-                    ))
+                    </React.Fragment>
+                    ))}
+
+                    {/* Trailing "+" card */}
+                    {draggedType === null && (
+                      <div className="relative flex flex-col z-10">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (!boundEntity) {
+                              alert(language === 'fa' ? 'لطفاً ابتدا اتصال موجودیت را انجام دهید.' : 'Please connect to an entity first.');
+                              return;
+                            }
+                            setShowAddMenuGroupId(group.id);
+                          }}
+                          className="h-24 border-2 border-dashed border-gray-200 dark:border-slate-800/80 hover:border-indigo-500 dark:hover:border-indigo-400 hover:bg-indigo-50/30 dark:hover:bg-slate-800/20 rounded-xl flex flex-col items-center justify-center gap-1.5 text-gray-400 hover:text-indigo-650 dark:hover:text-indigo-400 transition-all cursor-pointer text-xs font-semibold p-3"
+                          title={language === 'fa' ? 'افزودن فیلد جدید' : 'Add New Field'}
+                        >
+                          <Plus className="w-5 h-5 text-gray-300 dark:text-slate-650" />
+                          <span>{language === 'fa' ? 'افزودن فیلد' : 'Add Field'}</span>
+                        </button>
+
+                        {showAddMenuGroupId === group.id && (
+                          <>
+                            <div className="fixed inset-0 z-40" onClick={(e) => { e.stopPropagation(); setShowAddMenuGroupId(null); }} />
+                            <div className="absolute top-full mt-2 right-1/2 translate-x-1/2 z-50 w-64 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-xl shadow-xl p-2.5 max-h-72 overflow-y-auto text-start">
+                              <h5 className="text-[10px] font-bold text-gray-400 dark:text-slate-500 mb-2 px-2.5 py-1 uppercase tracking-wider">
+                                {language === 'fa' ? 'انتخاب فیلد برای افزودن' : 'Select Field to Add'}
+                              </h5>
+                              <div className="space-y-1">
+                                {availableFields.length === 0 ? (
+                                  <p className="text-xs text-gray-450 dark:text-slate-500 text-center py-4">{language === 'fa' ? 'فیلد در دسترسی وجود ندارد' : 'No available fields'}</p>
+                                ) : (
+                                  availableFields.map(field => (
+                                    <button
+                                      key={field.id}
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        onAddFieldDirectly?.(group.id, field.id);
+                                        setShowAddMenuGroupId(null);
+                                      }}
+                                      className="w-full flex items-center gap-3 px-2.5 py-1.5 text-xs font-semibold text-gray-700 dark:text-slate-350 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 hover:text-indigo-650 dark:hover:text-indigo-400 rounded-lg transition-colors cursor-pointer text-start"
+                                    >
+                                      <div className="p-1.5 bg-gray-50 dark:bg-slate-800 rounded-md">
+                                        {getFieldIcon(field.type)}
+                                      </div>
+                                      <div className="flex flex-col min-w-0">
+                                        <span className="truncate">{field.label}</span>
+                                        <span className="text-[9px] text-gray-400 dark:text-slate-500 font-normal">
+                                          {t(field.type) || field.type}
+                                        </span>
+                                      </div>
+                                    </button>
+                                  ))
+                                )}
+                              </div>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </>
                   )}
                 </motion.div>
               </motion.div>

@@ -519,15 +519,6 @@ export function useFormState() {
   }, []);
 
   // --- DRAG AND DROP HANDLERS ---
-  const handleDragStartSidebar = (e: React.DragEvent, itemType: string) => {
-    e.dataTransfer.setData('componentType', itemType);
-    if (itemType === 'comp-grid-col' || itemType === 'comp-formula') {
-      setDraggedType('column');
-    } else {
-      setDraggedType('field');
-    }
-  };
-
   const handleDrop = (e: React.DragEvent, targetZone: string, groupId: string | null = null, targetFieldId: string | null = null) => {
     e.preventDefault();
     e.stopPropagation();
@@ -820,6 +811,85 @@ export function useFormState() {
     setSelectedElement((prev: any) => ({...prev, [prop]: value}));
   };
 
+  const handleAddFieldDirectly = (targetZone: string, groupId: string | null, fieldId: string) => {
+    if (fieldId === 'comp-formula') {
+      const newItem = {
+        id: `field_${Date.now()}`,
+        type: 'comp-formula',
+        label: language === 'fa' ? 'ستون محاسباتی' : 'Formula Column',
+        name: language === 'fa' ? 'ستون محاسباتی' : 'Formula Column',
+        required: false,
+        formula: { segments: [], ops: [] }
+      };
+
+      if (targetZone === 'l2-grid-columns') {
+        setLevel2Tabs(tabs => tabs.map(t => t.id === activeL2TabId ? { ...t, gridColumns: [...t.gridColumns, newItem] } : t));
+      }
+      return;
+    }
+
+    let currentEntityKey = '';
+    
+    if (targetZone === 'main') {
+      currentEntityKey = boundMainEntity;
+    } else if (targetZone.startsWith('l2-')) {
+      const tab = level2Tabs.find(t => t.id === activeL2TabId);
+      if (tab) {
+        currentEntityKey = tab.boundEntity || '';
+      }
+    }
+
+    if (!currentEntityKey) {
+      alert('لطفاً ابتدا اتصال موجودیت را انجام دهید.');
+      return;
+    }
+
+    const currentEntityFieldsObj = (entities as any)[currentEntityKey]?.fields || [];
+    const firstAvailable = currentEntityFieldsObj.find((f: any) => f.id === fieldId);
+
+    if (!firstAvailable) return;
+
+    const newItem = {
+      id: `field_${Date.now()}`,
+      type: firstAvailable.type || 'comp-text',
+      label: firstAvailable.label,
+      name: firstAvailable.name || firstAvailable.id,
+      boundSystemField: firstAvailable.id,
+      required: false
+    };
+
+    if ((targetZone === 'main' || targetZone === 'l2-form') && groupId) {
+      if (targetZone === 'main') {
+        setMainGroups(groups => groups.map(g => {
+          if (g.id === groupId) {
+            return { ...g, fields: [...g.fields, newItem] };
+          }
+          return g;
+        }));
+      } else {
+        const setTabs = setLevel2Tabs;
+        const activeId = activeL2TabId;
+         
+        setTabs(tabs => tabs.map((t:any) => {
+          if (t.id === activeId) {
+             return {
+                  ...t,
+                  groups: t.groups.map((g:any) => {
+                       if (g.id === groupId) {
+                            return { ...g, fields: [...g.fields, newItem] };
+                       }
+                       return g;
+                  })
+             };
+          }
+          return t;
+        }));
+      }
+    } else if (targetZone === 'l2-grid-columns') {
+       setLevel2Tabs(tabs => tabs.map(t => t.id === activeL2TabId ? { ...t, gridColumns: [...t.gridColumns, newItem] } : t));
+    }
+  };
+
   return {
     mainGroups,
     setMainGroups,
@@ -845,7 +915,6 @@ export function useFormState() {
     handleDrillDown,
     handleBack,
     handleBindEntity,
-    handleDragStartSidebar,
     handleDrop,
     handleDragOver,
     handleAddGroup,
@@ -859,7 +928,8 @@ export function useFormState() {
     setDraggedType,
     mainPanelColumns,
     setMainPanelColumns,
-    autoBindCreatedEntity
+    autoBindCreatedEntity,
+    handleAddFieldDirectly
   };
 }
 

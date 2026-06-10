@@ -138,22 +138,6 @@ function checkDarkThemeWrappers() {
   }
 }
 
-function checkSidebarFormulaColumn() {
-  console.log('🔍 Checking Sidebar.tsx for draggable formula columns...');
-  const filePath = path.resolve('src/components/layout/Sidebar.tsx');
-  if (!fs.existsSync(filePath)) {
-    console.error('❌ Sidebar.tsx not found!');
-    failed = true;
-    return;
-  }
-
-  const content = fs.readFileSync(filePath, 'utf8');
-  if (!content.includes("type=\"comp-formula\"")) {
-    console.error("❌ Sidebar.tsx does not contain draggable item for 'comp-formula'!");
-    failed = true;
-  }
-}
-
 // Run checks
 checkInvalidColors();
 checkTabPanelSettings();
@@ -161,7 +145,6 @@ checkTextFieldSettings();
 checkFormPanelHelperText();
 checkUseFormState();
 checkDarkThemeWrappers();
-checkSidebarFormulaColumn();
 
 if (failed) {
   console.error('\n🛑 Validation FAILED! Regressions/violations were found.');

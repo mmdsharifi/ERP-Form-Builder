@@ -22,6 +22,7 @@ interface DetailPanelProps {
   translateTitle: (title: string) => string;
   entities: Record<string, { name: string; fields: any[] }>;
   draggedType: 'field' | 'column' | null;
+  handleAddFieldDirectly: (targetZone: string, groupId: string | null, fieldId: string) => void;
 }
 
 export const DetailPanel: React.FC<DetailPanelProps> = ({
@@ -41,6 +42,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
   translateTitle,
   entities,
   draggedType,
+  handleAddFieldDirectly
 }) => {
   const [isTabLoading, setIsTabLoading] = useState<Record<string, boolean>>({});
   const [draggedTabId, setDraggedTabId] = useState<string | null>(null);
@@ -383,6 +385,9 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
                           language={language}
                           t={t}
                           isDraggingColumn={draggedType === 'column'}
+                          entities={entities}
+                          boundEntity={activeTab.boundEntity}
+                          onAddColumnDirectly={(colId) => handleAddFieldDirectly('l2-grid-columns', null, colId)}
                         />
                       )}
                     </div>

@@ -1,7 +1,6 @@
 import React from 'react';
 import { useFormState } from './hooks/useFormState';
 import { Header } from './components/layout/Header';
-import { Sidebar } from './components/layout/Sidebar';
 import { SettingsPanel } from './components/layout/SettingsPanel';
 import { MainPanel } from './components/canvas/MainPanel';
 import { DetailPanel } from './components/canvas/DetailPanel';
@@ -43,11 +42,6 @@ export default function App() {
       />
 
       <div className="flex-1 flex overflow-hidden">
-        <Sidebar 
-          onDragStart={formState.handleDragStartSidebar} 
-          t={formState.t} 
-        />
-        
         <main className="flex-1 relative overflow-hidden flex flex-col p-6">
           <div className="absolute inset-0 p-6 overflow-y-auto">
             <div className="max-w-5xl mx-auto space-y-4 pb-20">
@@ -71,6 +65,7 @@ export default function App() {
                 mainPanelColumns={formState.mainPanelColumns}
                 onUpdateFieldProp={formState.updateElementProp}
                 language={formState.language}
+                handleAddFieldDirectly={formState.handleAddFieldDirectly}
               />
               
               <DetailPanel 
@@ -92,6 +87,7 @@ export default function App() {
                 entities={formState.entities}
                 draggedType={formState.draggedType}
                 setDraggedType={formState.setDraggedType}
+                handleAddFieldDirectly={formState.handleAddFieldDirectly}
               />
             </div>
           </div>
