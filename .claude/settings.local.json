@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -rohE '>[A-Z][a-zA-Z ]{3,28}<' src/App.tsx src/components/canvas/MainPanel.tsx src/components/FormPanel.tsx)",
+      "Bash(node *)",
+      "Bash(git *)"
+    ]
+  }
+}

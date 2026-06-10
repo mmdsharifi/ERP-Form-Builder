@@ -23,6 +23,7 @@ interface MainPanelProps {
   language: 'fa' | 'en';
   t: (key: string) => string;
   translateTitle: (title: string) => string;
+  handleAddFieldDirectly: (targetZone: string, groupId: string | null, fieldId: string) => void;
 }
 
 export const MainPanel: React.FC<MainPanelProps> = ({
@@ -44,7 +45,8 @@ export const MainPanel: React.FC<MainPanelProps> = ({
   setDraggedType,
   mainPanelColumns,
   onUpdateFieldProp,
-  language
+  language,
+  handleAddFieldDirectly
 }) => {
   const [isLoading, setIsLoading] = useState(false);
 
@@ -128,6 +130,9 @@ export const MainPanel: React.FC<MainPanelProps> = ({
             draggedType={draggedType}
             onUpdateFieldProp={onUpdateFieldProp}
             language={language}
+            entities={entities}
+            boundEntity={boundMainEntity}
+            onAddFieldDirectly={(groupId, fid) => handleAddFieldDirectly('main', groupId, fid)}
           />
         )}
       </div>
